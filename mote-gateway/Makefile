@@ -1,6 +1,8 @@
 # name of your application
 APPLICATION = mote-gateway
 
+PORT ?= /dev/ttyUSB1
+
 # If no BOARD is found in the environment, use this default:
 BOARD ?= phystick
 

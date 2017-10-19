@@ -10,7 +10,7 @@ TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 BOARD ?= phywave-ofa
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE ?= $(CURDIR)/../../RIOT
+RIOTBASE ?= $(CURDIR)/../../../RIOT
 
 # Uncomment these lines if you want to use platform support from external
 # repositories:

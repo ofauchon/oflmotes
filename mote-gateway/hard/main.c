@@ -1,21 +1,19 @@
 /*
- * Copyright (C) 2008, 2009, 2010  Kaspar Schleiser <kaspar@schleiser.de>
- * Copyright (C) 2013 INRIA
- * Copyright (C) 2013 Ludwig Knüpfer <ludwig.knuepfer@fu-berlin.de>
- *
+ * Copyright (C) 2017, Olivier Fauchon <olivier@oflabs.com>
+
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
  * directory for more details.
  */
 
 /**
- * @ingroup     examples
+ * @ingroup     nogroup
  * @{
  *
  * @file
- * @brief       Application that make led blink with a thread
+ * @brief       Acts as a 802.15.4 to serial gateway
  *
- * @author      Olivier Fauchon <ofauchon2204@gmail.com>
+ * @author      Olivier Fauchon <olivier@oflabs.com>
  *
  * @}
  */
@@ -23,9 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include "periph/hwrng.h"                           
-
 
 #include "thread.h"
 #include "timex.h"
@@ -49,8 +45,9 @@
 #define PAUSE 2
 #define MAX_ADDR_LEN            (8U)
 
-char blink_thread_stack[THREAD_STACKSIZE_MAIN];
 
+/* This was my first 'hello world' thread (led blinking) */
+char blink_thread_stack[THREAD_STACKSIZE_MAIN];
 void *blink_thread(void *arg)
 {
     (void) arg;
@@ -63,7 +60,7 @@ void *blink_thread(void *arg)
     return NULL;
 }
 
-static int _send(kernel_pid_t dev, char* data, char data_sz)
+static int data_tx(kernel_pid_t dev, char* data, char data_sz)
 {
     gnrc_pktsnip_t *pkt, *hdr;
     gnrc_netif_hdr_t *nethdr;
@@ -99,7 +96,7 @@ return 1;
 }
 
 
-static int _netif_set_flag(kernel_pid_t dev, netopt_t opt, netopt_enable_t set)
+static int netif_set_flag(kernel_pid_t dev, netopt_t opt, netopt_enable_t set)
 {
     if (gnrc_netapi_set(dev, opt, 0, &set, sizeof(netopt_enable_t)) < 0) {
         puts("error: unable to set option\r\n");
@@ -109,7 +106,7 @@ static int _netif_set_flag(kernel_pid_t dev, netopt_t opt, netopt_enable_t set)
     return 0;
 }
 
-static int _netif_set_i16(kernel_pid_t dev, netopt_t opt, char *i16_str)
+static int netif_set_i16(kernel_pid_t dev, netopt_t opt, char *i16_str)
 {
     int16_t val = atoi(i16_str);
 
@@ -123,7 +120,7 @@ static int _netif_set_i16(kernel_pid_t dev, netopt_t opt, char *i16_str)
 
 
 
-static int print_help(int argc, char **argv)
+static int cmd_help(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
@@ -135,11 +132,12 @@ static int cmd_reboot(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
-    printf("Rebooting \r\n");
+    printf("Reboot not yet implemented\r\n");
     //pm_reboot(); 
     return 0;
 }
 
+// Network commands 
 static int cmd_net(int argc, char **argv)
 {
     (void) argc;
@@ -176,18 +174,17 @@ static int cmd_net(int argc, char **argv)
     if (argc==2 && strcmp(argv[1], "send")==0 ){
 		printf("Send B E E F\r\n");
 		char raw_data[4] = {'B', 'E', 'E', 'F'};
-		_send(ifs[0], raw_data, 4);
+		data_tx(ifs[0], raw_data, 4);
 	}
     if (argc==3 && strcmp(argv[1], "chan")==0 ){
 		printf("Set radio channel to '%s'\r\n", argv[2]);
-		_netif_set_i16(ifs[0], NETOPT_CHANNEL, argv[2]);
+		netif_set_i16(ifs[0], NETOPT_CHANNEL, argv[2]);
 	}
     if (argc==2 && strcmp(argv[1], "mon")==0 ){
 		printf("Enable monitor .... RAW + PROMISC + CHANNEL 11\r\n");
 		//kernel_pid_t dump_pid=0;
-		_netif_set_i16(ifs[0], NETOPT_CHANNEL, "11");
-		_netif_set_flag(ifs[0], NETOPT_RAWMODE, NETOPT_ENABLE);
-		_netif_set_flag(ifs[0], NETOPT_PROMISCUOUSMODE, NETOPT_ENABLE);
+		netif_set_flag(ifs[0], NETOPT_RAWMODE, NETOPT_ENABLE);
+		netif_set_flag(ifs[0], NETOPT_PROMISCUOUSMODE, NETOPT_ENABLE);
 		gnrc_pktdump_init();
 
 	}
@@ -195,6 +192,7 @@ static int cmd_net(int argc, char **argv)
     return 0;
 }
 
+// Some tests
 static int cmd_rand(int argc, char **argv)
 {
 	uint8_t data[4]; 
@@ -207,8 +205,8 @@ static int cmd_rand(int argc, char **argv)
 
 
 static const shell_command_t shell_commands[] = {   
-    { "?", "print help", print_help },                                                  
-    { "help", "print help", print_help },                                                  
+    { "?", "cmd help", cmd_help },                                                  
+    { "help", "cmd help", cmd_help },                                                  
     { "net", "network commands",cmd_net },   
     { "rand", "get random",cmd_rand },   
     { "reboot", "reboot system",cmd_reboot },   

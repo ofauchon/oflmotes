@@ -53,10 +53,7 @@ static void _dump(gnrc_pktsnip_t *pkt)
     int snips = 0;
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
-	printf("Dump packet\r\n");
-
-	dump_hex(pkt->data, pkt->size); 
-	printf("\r\n");
+	dump_hex_compact(pkt->data, pkt->size); 
 
 	++snips;
 	size += snip->size;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, Olivier Fauchon <olivier@oflabs.com>
+ * Copyright (C) 2017, Olivier Fauchon <oflmotes@oflabs.com>
 
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -13,7 +13,7 @@
  * @file
  * @brief       Acts as a 802.15.4 to serial gateway
  *
- * @author      Olivier Fauchon <olivier@oflabs.com>
+ * @author      Olivier Fauchon <ofmotes@oflabs.com>
  *
  * @}
  */

@@ -15,6 +15,20 @@
 /*
  * Dumps a packet in binary form
  */
+void dump_hex_compact(void* pData, size_t pLen)
+{
+	int8_t p; 
+	printf("<");
+	for ( p=0; p<pLen; p++) 
+	{
+		printf("%02X", ((char*)pData)[p] );
+	}
+	printf("\n");
+}
+
+/*
+ * Dumps a packet in binary form
+ */
 void dump_hex(void* pData, size_t pLen)
 {
     volatile uint8_t idx_char,idx_ligne,offset;

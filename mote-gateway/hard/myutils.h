@@ -8,6 +8,8 @@ extern "C" {
 #endif
 
 void dump_hex(void* pData, size_t pLen);
+void dump_hex_compact(void* pData, size_t pLen);
+
 
 
 #ifdef __cplusplus

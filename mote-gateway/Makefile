@@ -1,10 +1,13 @@
 # name of your application
 APPLICATION = mote-gateway
 
-PORT ?= /dev/ttyUSB1
+PORT = /dev/ttyUSB1
+BAUD = 115200
+TERMPROG=picocom
+TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= phystick
+BOARD ?= phywave-ofa
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../../RIOT
@@ -29,18 +32,12 @@ CFLAGS += -DDEVELHELP -g
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
-# Modules to include:
-#USEMODULE += shell
-#USEMODULE += shell_commands
-#USEMODULE += ps
-# include and auto-initialize all available sensors
-#USEMODULE += saul_default
-
 USEMODULE += xtimer
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
 USEMODULE += shell
 USEMODULE += od
+USEMODULE += netstats_l2 
 
 FEATURES_REQUIRED = periph_uart
 
@@ -50,23 +47,23 @@ BOARD_PROVIDES_NETIF := airfy-beacon cc2538dk fox iotlab-m3 iotlab-a8-m3 mulle \
         pca10000 pca10005 remote-pa remote-reva saml21-xpro samr21-xpro \
         spark-core telosb yunjia-nrf51822 z1
 
-ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
+#ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # Use modules for networking
   # gnrc is a meta module including all required, basic gnrc networking modules
-  USEMODULE += gnrc
+#  USEMODULE += gnrc
   # use the default network interface for the board
-  USEMODULE += gnrc_netdev_default
+#  USEMODULE += gnrc_netdev_default
   # automatically initialize the network interface
-  USEMODULE += auto_init_gnrc_netif
+#  USEMODULE += auto_init_gnrc_netif
   # shell command to send L2 packets with a simple string
-  USEMODULE += gnrc_txtsnd
+#  USEMODULE += gnrc_txtsnd
   # the application dumps received packets to stdout
-  USEMODULE += gnrc_pktdump
+#  USEMODULE += gnrc_pktdump
 
   # We use only the lower layers of the GNRC network stack, hence, we can
   # reduce the size of the packet buffer a bit
   CFLAGS += -DGNRC_PKTBUF_SIZE=512
-endif
+#endif
 
 FEATURES_OPTIONAL += config
 FEATURES_OPTIONAL += periph_rtc

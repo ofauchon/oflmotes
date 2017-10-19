@@ -39,7 +39,10 @@
 #include "net/netopt.h"
 #include "net/gnrc/pkt.h"
 #include "net/gnrc/pktbuf.h"
+#include "net/gnrc/netreg.h"
 #include "net/gnrc/netif/hdr.h"
+#include "net/netstats.h" 
+
 
 #include "./pktdump.h"
 
@@ -102,7 +105,7 @@ static int _netif_set_flag(kernel_pid_t dev, netopt_t opt, netopt_enable_t set)
         puts("error: unable to set option\r\n");
         return 1;
     }
-    printf("success: %sset option\r\n", (set) ? "" : "un");
+ //   printf("success: %sset option\r\n", (set) ? "" : "un");
     return 0;
 }
 
@@ -124,7 +127,7 @@ static int print_help(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
-    printf("This is help\r\n");
+    printf("Available commands:\r\nnet\t Network interface\r\nreboot\r\nReboot board\r\n");
     return 0;
 }
 
@@ -133,6 +136,7 @@ static int cmd_reboot(int argc, char **argv)
     (void) argc;
     (void) argv;
     printf("Rebooting \r\n");
+    //pm_reboot(); 
     return 0;
 }
 
@@ -144,15 +148,31 @@ static int cmd_net(int argc, char **argv)
 	size_t numof = gnrc_netif_get(ifs);
 
     if (argc==2 && strcmp(argv[1], "help")==0 ){
-		printf("net info\t display network informations\r\nnet send\t send test BEEF frame\r\nnet chan XX\tSet radio chan XX (11<XX<26)\r\n");
+		printf("net info\t display network informations\r\nnet send\t send test BEEF frame\r\nnet chan XX\t Set radio chan XX (11<XX<26)\r\nnet mon\t Switch to promiscuous and dump reveived packets\r\n");
 		return 0;
 	}
+
     if (argc==2 && strcmp(argv[1], "info")==0 ){
         printf("Network info \r\n");
 		// Initialize network 
 		printf("Number of interfaces: %d\r\n", numof); 
-
+		netstats_t *stats;
+		int	res = gnrc_netapi_get(ifs[0], NETOPT_STATS, 0, &stats, sizeof(&stats));
+		if (res>=0){
+        printf("           Statistics \r\n"
+               "            RX packets %u  bytes %u\r\n"
+               "            TX packets %u (Multicast: %u)  bytes %u\r\n"
+               "            TX succeeded %u errors %u\r\n",
+               (unsigned) stats->rx_count,
+               (unsigned) stats->rx_bytes,
+               (unsigned) (stats->tx_unicast_count + stats->tx_mcast_count),
+               (unsigned) stats->tx_mcast_count,
+               (unsigned) stats->tx_bytes,
+               (unsigned) stats->tx_success,
+               (unsigned) stats->tx_failed);
+		}
     }
+
     if (argc==2 && strcmp(argv[1], "send")==0 ){
 		printf("Send B E E F\r\n");
 		char raw_data[4] = {'B', 'E', 'E', 'F'};
@@ -162,9 +182,10 @@ static int cmd_net(int argc, char **argv)
 		printf("Set radio channel to '%s'\r\n", argv[2]);
 		_netif_set_i16(ifs[0], NETOPT_CHANNEL, argv[2]);
 	}
-    if (argc==2 && strcmp(argv[1], "monitor")==0 ){
-		printf("Enable monitor\r\n");
+    if (argc==2 && strcmp(argv[1], "mon")==0 ){
+		printf("Enable monitor .... RAW + PROMISC + CHANNEL 11\r\n");
 		//kernel_pid_t dump_pid=0;
+		_netif_set_i16(ifs[0], NETOPT_CHANNEL, "11");
 		_netif_set_flag(ifs[0], NETOPT_RAWMODE, NETOPT_ENABLE);
 		_netif_set_flag(ifs[0], NETOPT_PROMISCUOUSMODE, NETOPT_ENABLE);
 		gnrc_pktdump_init();
@@ -186,6 +207,7 @@ static int cmd_rand(int argc, char **argv)
 
 
 static const shell_command_t shell_commands[] = {   
+    { "?", "print help", print_help },                                                  
     { "help", "print help", print_help },                                                  
     { "net", "network commands",cmd_net },   
     { "rand", "get random",cmd_rand },   

@@ -7,25 +7,37 @@ import (
 	"log"
 	"regexp"
 	"time"
+	"strings"
 	"github.com/influxdata/influxdb/client/v2"
+	"flag"
 )
 
-const (
-	iUrl = "http://localhost:8086"
-	iDb = "oflmotes"
-	iUser = "dev"
-	iPass = "dev"
-)
+var influx_url, influx_db,influx_user,influx_pass string;
+var serial_dev string;
 
+func process_data(s string) {
 
+	fmt.Println("process_data:",s);
 
-func write_data() {
+	// FWVER:0102;CAPA:0004;BATLEV:2764;AWAKE_SEC:0;MAIN_LOOP:0;TEMP:+0.00;
+    ss := strings.Split(s,";")
+	m := make(map[string]string)
+	for  _, pair := range  ss {
+		z:=strings.Split(pair,":")
+		if len(z)==2 {
+			m[z[0]]=z[1]
+		}
+	}
+
+	for  k,v := range m {
+		fmt.Println("Key:", k, "Val:", v)
+	}
 
 	// Create a new HTTPClient
 	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     iUrl,
-		Username: iUser,
-		Password: iPass,
+		Addr:     influx_url,
+		Username: influx_user,
+		Password: influx_pass,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +45,7 @@ func write_data() {
 
 	// Create a new point batch
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  iDb,
+		Database:  influx_db,
 		Precision: "s",
 	})
 	if err != nil {
@@ -41,11 +53,11 @@ func write_data() {
 	}
 
 	// Create a point and add to batch
-	tags := map[string]string{"cpu": "cpu-total"}
+	tags := map[string]string{"mote": "mote1"}
 	fields := map[string]interface{}{
-		"idle":   10.1,
-		"system": 53.3,
-		"user":   46.6,
+		"temp":   20.1,
+		"pres": 0,
+		"lux":   0,
 	}
 
 	pt, err := client.NewPoint("metrics", tags, fields, time.Now())
@@ -63,16 +75,18 @@ func write_data() {
 
 
 func serialjob(msg chan string, sig chan string) {
-	c := &serial.Config{Name: "/dev/ttyUSB1", Baud: 115200, ReadTimeout: time.Second * 1}
+	c := &serial.Config{Name: serial_dev, Baud: 115200, ReadTimeout: time.Second * 1}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	n, err := s.Write([]byte("net mon\n"))
+	n, err := s.Write([]byte("net chan 11\n"))
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Fixme : Handle Write eror
+	n, _ = s.Write([]byte("net mon\n"))
 
 	buftotal := make([]byte, 1)
 	buf := make([]byte, 1024)
@@ -101,11 +115,27 @@ func serialjob(msg chan string, sig chan string) {
 	} // Endless loop for
 }
 
+
+func parseArgs(){
+	flag.StringVar(&influx_url, "influx_url", "", "InfluxDB serveur URL")
+	flag.StringVar(&influx_db, "influx_db", "", "InfluxDB database")
+	flag.StringVar(&influx_user, "influx_user", "", "InfluxDB user")
+	flag.StringVar(&influx_pass, "influx_pass", "", "InfluxDB password")
+	flag.StringVar(&serial_dev, "dev", "", "/dev/ttyUSB1")
+	flag.Parse()
+
+	fmt.Println("InfluxDB backend: Url:",influx_url, " Db", influx_db, " User", influx_user, " Pass:xxx");
+
+}
+
 func main() {
 
 	fmt.Println("OLFmotes gateway server\r\n")
-	fmt.Println("Made with GOLANG !\r\n")
+	fmt.Println("Written in GO !\r\n")
 
+	parseArgs()
+
+	// Inter routines communicatin
 	messages := make(chan string)
 	signals := make(chan string)
 
@@ -115,8 +145,7 @@ func main() {
 	// Loop until someting happens
 	for {
 		s := <-signals
-		fmt.Println("Input :", s)
-		write_data();
+		process_data(s);
 	}
 
 }

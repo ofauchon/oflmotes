@@ -10,6 +10,7 @@ import (
 	"strings"
 	"github.com/influxdata/influxdb/client/v2"
 	"flag"
+	"strconv"
 )
 
 var influx_url, influx_db,influx_user,influx_pass string;
@@ -17,20 +18,28 @@ var serial_dev string;
 
 func process_data(s string) {
 
-	fmt.Println("process_data:",s);
+	fmt.Printf("** Incoming frame: '%s'\n",s);
 
 	// FWVER:0102;CAPA:0004;BATLEV:2764;AWAKE_SEC:0;MAIN_LOOP:0;TEMP:+0.00;
     ss := strings.Split(s,";")
-	m := make(map[string]string)
+	m := make(map[string]interface{})
 	for  _, pair := range  ss {
 		z:=strings.Split(pair,":")
 		if len(z)==2 {
-			m[z[0]]=z[1]
+
+			if(z[0]=="TEMP") {
+				//fmt.Println ("This is float"); 
+				f, _  := strconv.ParseFloat(z[1],64)
+				m[z[0]]=f
+			} else {
+				i, _  := strconv.ParseInt(z[1],10,64)
+				m[z[0]]=i
+			}
 		}
 	}
 
 	for  k,v := range m {
-		fmt.Println("Key:", k, "Val:", v)
+		fmt.Printf("key: '%s' value: '%s'\n", k, v)
 	}
 
 	// Create a new HTTPClient
@@ -54,18 +63,16 @@ func process_data(s string) {
 
 	// Create a point and add to batch
 	tags := map[string]string{"mote": "mote1"}
-	fields := map[string]interface{}{
-		"temp":   20.1,
-		"pres": 0,
-		"lux":   0,
-	}
+	fields :=m
 
-	pt, err := client.NewPoint("metrics", tags, fields, time.Now())
-	if err != nil {
-		log.Fatal(err)
+	if (len(m)>0){
+		fmt.Println("Sending to influx server");
+		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
+		bp.AddPoint(pt)
 	}
-	bp.AddPoint(pt)
-
 	// Write the batch
 	if err := c.Write(bp); err != nil {
 		log.Fatal(err)
@@ -130,8 +137,7 @@ func parseArgs(){
 
 func main() {
 
-	fmt.Println("OLFmotes gateway server\r\n")
-	fmt.Println("Written in GO !\r\n")
+	fmt.Println("OLFmotes gateway server (golang)")
 
 	parseArgs()
 

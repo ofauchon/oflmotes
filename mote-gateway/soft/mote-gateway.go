@@ -3,45 +3,64 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/tarm/serial"
 	"log"
-	"regexp"
 	"time"
+	"regexp"
 	"strings"
-	"github.com/influxdata/influxdb/client/v2"
 	"flag"
 	"strconv"
+	"github.com/influxdata/influxdb/client/v2"
+	"github.com/tarm/serial"
 )
 
 var influx_url, influx_db,influx_user,influx_pass string;
 var serial_dev string;
 
-func process_data(s string) {
-
-	fmt.Printf("** Incoming frame: '%s'\n",s);
-
+type  Packet struct {
 	// FWVER:0102;CAPA:0004;BATLEV:2764;AWAKE_SEC:0;MAIN_LOOP:0;TEMP:+0.00;
-    ss := strings.Split(s,";")
-	m := make(map[string]interface{})
-	for  _, pair := range  ss {
+	raw	string
+	payload	string
+	smac,dmac string
+	datamap map[string]interface{}
+}
+
+func dump_packet(p *Packet){
+	fmt.Printf("X Packet Dump:\nX Raw:'%' '\n", p.raw);
+	fmt.Printf("X Packet Dump:\nX Payload:'%' '\n", p.payload);
+	fmt.Printf("X Packet Dump:\nX Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
+	for  k,v := range p.datamap {
+		fmt.Printf("X datamap key: '%s' value: '%s'\n", k, v)
+	}
+}
+
+func decode_packet(p *Packet){
+	fmt.Println("**** decode\n")
+
+	r, err := hex.DecodeString(p.raw[18:]) // Skip header (macs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p.smac=p.raw[2:10]
+	p.dmac=p.raw[10:18]
+	p.payload = (string)(r); 
+    ss := strings.Split(p.payload, ";")
+	p.datamap = make(map[string]interface{})
+	for  _, pair := range ss {
 		z:=strings.Split(pair,":")
 		if len(z)==2 {
-
 			if(z[0]=="TEMP") {
 				//fmt.Println ("This is float"); 
 				f, _  := strconv.ParseFloat(z[1],64)
-				m[z[0]]=f
+				p.datamap[z[0]]=f
 			} else {
 				i, _  := strconv.ParseInt(z[1],10,64)
-				m[z[0]]=i
+				p.datamap[z[0]]=i
 			}
 		}
 	}
+}
 
-	for  k,v := range m {
-		fmt.Printf("key: '%s' value: '%s'\n", k, v)
-	}
-
+func push_influx(p *Packet){
 	// Create a new HTTPClient
 	c, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr:     influx_url,
@@ -62,10 +81,10 @@ func process_data(s string) {
 	}
 
 	// Create a point and add to batch
-	tags := map[string]string{"mote": "mote1"}
-	fields :=m
+	tags := map[string]string{"id": p.smac}
+	fields := p.datamap
 
-	if (len(m)>0){
+	if (len(p.datamap)>0){
 		fmt.Println("Sending to influx server");
 		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
 		if err != nil {
@@ -81,7 +100,7 @@ func process_data(s string) {
 }
 
 
-func serialjob(msg chan string, sig chan string) {
+func serialworker(sig chan *Packet) {
 	c := &serial.Config{Name: serial_dev, Baud: 115200, ReadTimeout: time.Second * 1}
 	s, err := serial.OpenPort(c)
 	if err != nil {
@@ -106,16 +125,13 @@ func serialjob(msg chan string, sig chan string) {
 			r, _ := regexp.Compile("<[0-9A-Z]+\n")
 			m := r.FindIndex(buftotal)
 			if m != nil {
-				mat := buftotal[m[0]+1+18 : m[1]-4-1] /// Extract only playload (no '<', \n,macs
-				//fmt.Printf("Match %s\r\n", mat)
-				decoded, err := hex.DecodeString(string(mat))
-				if err != nil {
-					log.Fatal(err)
+
+				pkt :=  Packet {
+					raw: (string)(buftotal[m[0]+1:m[1]-1]),
 				}
 
-				//fmt.Printf("%s\r\n", decoded)
-				buftotal = buftotal[m[1]:]
-				sig <- string(decoded)
+
+				sig <- &pkt
 			}
 
 		}
@@ -135,6 +151,7 @@ func parseArgs(){
 
 }
 
+
 func main() {
 
 	fmt.Println("OLFmotes gateway server (golang)")
@@ -142,16 +159,18 @@ func main() {
 	parseArgs()
 
 	// Inter routines communicatin
-	messages := make(chan string)
-	signals := make(chan string)
+	//messages := make(chan *Packet)
+	signals := make(chan *Packet)
 
 	// Deal with serial in a job !
-	go serialjob(messages, signals)
+	go serialworker(signals)
 
 	// Loop until someting happens
 	for {
-		s := <-signals
-		process_data(s);
+		p := <-signals
+		decode_packet(p);
+		dump_packet(p);
+		push_influx(p)
 	}
 
 }

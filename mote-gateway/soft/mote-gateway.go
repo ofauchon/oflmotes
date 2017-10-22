@@ -129,8 +129,9 @@ func serialworker(sig chan *Packet) {
 				pkt :=  Packet {
 					raw: (string)(buftotal[m[0]+1:m[1]-1]),
 				}
+				buftotal = buftotal[m[1]:]
 
-
+				// Send signal
 				sig <- &pkt
 			}
 

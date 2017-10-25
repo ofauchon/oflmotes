@@ -33,11 +33,15 @@ CFLAGS += -DDEVELHELP -g
 QUIET ?= 1
 
 USEMODULE += xtimer
+# Add default network interface for the board
 USEMODULE += gnrc_netdev_default
+# Initialize the interfaces as gnrc interfaces
 USEMODULE += auto_init_gnrc_netif
 USEMODULE += shell
 USEMODULE += od
 USEMODULE += netstats_l2 
+USEMODULE += gnrc_mac 
+USEMODULE += gnrc_netdev 
 
 FEATURES_REQUIRED = periph_uart
 

@@ -48,19 +48,32 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
 
 #define PERLINE 20
-static void _dump(gnrc_pktsnip_t *pkt)
+static void _dump(gnrc_pktsnip_t *snip)
 {
     int snips = 0;
     int size = 0;
-    gnrc_pktsnip_t *snip = pkt;
-	dump_hex_compact(pkt->data, pkt->size); 
+    
 
-	++snips;
-	size += snip->size;
-	snip = snip->next;
+
+    while (snip != NULL) {
+        printf("~~ SNIP %2i - size: %3u byte\n", snips, (unsigned int)snip->size);
+		if (snip->type == GNRC_NETTYPE_UNDEF) {
+        	printf("~~ Got NETTYPE_UNDEF\n");
+			dump_hex_compact(snip->data, snip->size); 
+		}
+		if (snip->type == GNRC_NETTYPE_NETIF) {
+        	printf("~~ Got NETTYPE_NETIF\n");
+			gnrc_netif_hdr_t* hdr = snip->data; 
+			printf("LQI: %u RSSI: %u\n", hdr->lqi, hdr->rssi);
+		}
+
+        ++snips;
+        size += snip->size;
+        snip = snip->next;
+    }
 
     //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
-    gnrc_pktbuf_release(pkt);
+    gnrc_pktbuf_release(snip);
 }
 
 static void *_eventloop(void *arg)
@@ -94,7 +107,7 @@ static void *_eventloop(void *arg)
                // puts("PKTDUMP: data to send:");
                 _dump(msg.content.ptr);
                 break;
-            case GNRC_NETAPI_MSG_TYPE_GET:
+            case GNRC_NETAPI_MSG_TYPE_GET: // Always respond to GET/SET messages with ACK ! 
             case GNRC_NETAPI_MSG_TYPE_SET:
                 msg_reply(&msg, &reply);
                 break;

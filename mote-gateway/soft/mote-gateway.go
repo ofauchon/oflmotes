@@ -16,6 +16,15 @@ import (
 var influx_url, influx_db,influx_user,influx_pass string;
 var serial_dev string;
 
+
+
+
+func doLog(format string, a ...interface{}) {
+	t := time.Now()
+	fmt.Printf("%s ", string(t.Format("20060102 150405")) )
+	fmt.Printf(format, a...)
+}
+
 type  Packet struct {
 	// FWVER:0102;CAPA:0004;BATLEV:2764;AWAKE_SEC:0;MAIN_LOOP:0;TEMP:+0.00;
 	raw	string
@@ -25,16 +34,15 @@ type  Packet struct {
 }
 
 func dump_packet(p *Packet){
-	fmt.Printf("X Packet Dump:\nX Raw:'%' '\n", p.raw);
-	fmt.Printf("X Packet Dump:\nX Payload:'%' '\n", p.payload);
-	fmt.Printf("X Packet Dump:\nX Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
+	doLog("Dump:\nX Raw:'%' '\n", p.raw);
+	doLog("Dump:\nX Payload:'%' '\n", p.payload);
+	doLog("Dump:\nX Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
 	for  k,v := range p.datamap {
-		fmt.Printf("X datamap key: '%s' value: '%s'\n", k, v)
+		doLog("Dump key/values: '%s' value: '%s'\n", k, v)
 	}
 }
 
 func decode_packet(p *Packet){
-	fmt.Println("**** decode\n")
 
 	r, err := hex.DecodeString(p.raw[18:]) // Skip header (macs)
 	if err != nil {
@@ -49,7 +57,7 @@ func decode_packet(p *Packet){
 		z:=strings.Split(pair,":")
 		if len(z)==2 {
 			if(z[0]=="TEMP") {
-				//fmt.Println ("This is float"); 
+				//doLog ("This is float"); 
 				f, _  := strconv.ParseFloat(z[1],64)
 				p.datamap[z[0]]=f
 			} else {
@@ -85,7 +93,7 @@ func push_influx(p *Packet){
 	fields := p.datamap
 
 	if (len(p.datamap)>0){
-		fmt.Println("Sending to influx server");
+		doLog("Sending to influx server\n");
 		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
 		if err != nil {
 			log.Fatal(err)
@@ -140,6 +148,7 @@ func serialworker(sig chan *Packet) {
 }
 
 
+
 func parseArgs(){
 	flag.StringVar(&influx_url, "influx_url", "", "InfluxDB serveur URL")
 	flag.StringVar(&influx_db, "influx_db", "", "InfluxDB database")
@@ -148,14 +157,14 @@ func parseArgs(){
 	flag.StringVar(&serial_dev, "dev", "", "/dev/ttyUSB1")
 	flag.Parse()
 
-	fmt.Println("InfluxDB backend: Url:",influx_url, " Db", influx_db, " User", influx_user, " Pass:xxx");
+	doLog("InfluxDB backend: Url:",influx_url, " Db", influx_db, " User", influx_user, " Pass:xxx\n");
 
 }
 
 
 func main() {
 
-	fmt.Println("OLFmotes gateway server (golang)")
+	doLog("OLFmotes gateway server (golang)\n")
 
 	parseArgs()
 

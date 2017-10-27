@@ -30,6 +30,7 @@ type  Packet struct {
 	raw	string
 	payload	string
 	smac,dmac string
+	span,dpan string
 	datamap map[string]interface{}
 }
 
@@ -37,6 +38,7 @@ func dump_packet(p *Packet){
 	doLog("Dump: Raw:'%s'\n", p.raw);
 	doLog("Dump: Payload:'%s'\n", p.payload );
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
+	doLog("Dump:X Span:'%s' Dpab: '%s'\n", p.span, p.dpan);
 	for  k,v := range p.datamap {
 		doLog("Dump: key/values: '%s' value: '%s'\n", k, v)
 	}
@@ -44,12 +46,15 @@ func dump_packet(p *Packet){
 
 func decode_packet(p *Packet){
 
+	fmt.Println(p.raw)
 	r, err := hex.DecodeString(p.raw[18:]) // Skip header (macs)
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.smac=p.raw[2:10]
-	p.dmac=p.raw[10:18]
+	p.dpan=p.raw[6:10]
+	p.dmac=p.raw[10:26]
+	p.span=p.raw[26:30]
+	p.smac=p.raw[30:46]
 	p.payload = (string)(r); 
     ss := strings.Split(p.payload, ";")
 	p.datamap = make(map[string]interface{})
@@ -133,6 +138,7 @@ func serialworker(sig chan *Packet) {
 			r, _ := regexp.Compile("<[0-9A-Z]+\n")
 			m := r.FindIndex(buftotal)
 			if m != nil {
+				fmt.Println("OK\n"); 
 
 				pkt :=  Packet {
 					raw: (string)(buftotal[m[0]+1:m[1]-1]),

@@ -48,11 +48,12 @@ kernel_pid_t gnrc_pktdump_pid = KERNEL_PID_UNDEF;
 static char _stack[GNRC_PKTDUMP_STACKSIZE];
 
 #define PERLINE 20
-static void _dump(gnrc_pktsnip_t *snip)
+static void _dump(gnrc_pktsnip_t *pkt)
 {
     int snips = 0;
     int size = 0;
-    
+    gnrc_pktsnip_t *snip = pkt;
+
 
 
     while (snip != NULL) {
@@ -73,7 +74,7 @@ static void _dump(gnrc_pktsnip_t *snip)
     }
 
     //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
-    gnrc_pktbuf_release(snip);
+    gnrc_pktbuf_release(pkt);
 }
 
 static void *_eventloop(void *arg)

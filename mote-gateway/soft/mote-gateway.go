@@ -34,11 +34,11 @@ type  Packet struct {
 }
 
 func dump_packet(p *Packet){
-	doLog("Dump:\nX Raw:'%' '\n", p.raw);
-	doLog("Dump:\nX Payload:'%' '\n", p.payload);
-	doLog("Dump:\nX Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
+	doLog("Dump: Raw:'%s'\n", p.raw);
+	doLog("Dump: Payload:'%s'\n", p.payload );
+	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
 	for  k,v := range p.datamap {
-		doLog("Dump key/values: '%s' value: '%s'\n", k, v)
+		doLog("Dump: key/values: '%s' value: '%s'\n", k, v)
 	}
 }
 
@@ -157,14 +157,17 @@ func parseArgs(){
 	flag.StringVar(&serial_dev, "dev", "", "/dev/ttyUSB1")
 	flag.Parse()
 
-	doLog("InfluxDB backend: Url:",influx_url, " Db", influx_db, " User", influx_user, " Pass:xxx\n");
+	doLog("InfluxDB backend: Url:%s Db:%s\n", influx_url, influx_db);
+	doLog("InfluxDB backend: User:%s Pass:<hidden>\n", influx_user);
 
 }
 
 
 func main() {
 
-	doLog("OLFmotes gateway server (golang)\n")
+	doLog("--------------------------------------)\n")
+	doLog("OLFmotes gateway server (I love golang)\n")
+	doLog("--------------------------------------)\n")
 
 	parseArgs()
 

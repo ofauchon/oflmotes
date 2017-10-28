@@ -35,7 +35,7 @@ type  Packet struct {
 }
 
 func dump_packet(p *Packet){
-	doLog("Dump: Raw:'%s'\n", p.raw);
+	//doLog("Dump: Raw:'%s'\n", p.raw);
 	doLog("Dump: Payload:'%s'\n", p.payload );
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
 	doLog("Dump:X Span:'%s' Dpab: '%s'\n", p.span, p.dpan);

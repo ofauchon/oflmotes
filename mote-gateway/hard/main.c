@@ -118,6 +118,62 @@ static int netif_set_i16(kernel_pid_t dev, netopt_t opt, char *i16_str)
     return 0;
 }
 
+static int netif_set_u16(kernel_pid_t dev, netopt_t opt, char *u16_str) 
+{
+    unsigned int res;
+    bool hex = false;
+
+    if ((res = strtoul(u16_str, NULL, 16)) == ULONG_MAX) {
+        puts("error: unable to parse value.\n"
+             "Must be a 16-bit unsigned integer (dec or hex)\n");
+        return 1;
+    }
+
+    if (gnrc_netapi_set(dev, opt, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
+        printf("Error a1\n");
+        return 1;
+    }
+
+    printf("success set option '%s'\n",u16_str);
+    if (hex) {
+        printf("0x%04x\n", res);
+    }
+
+    return 0;
+}
+
+static int netif_set_addr(kernel_pid_t dev, netopt_t opt, char *addr_str)
+{
+    uint8_t addr[MAX_ADDR_LEN];
+    size_t addr_len = gnrc_netif_addr_from_str(addr, sizeof(addr), addr_str);
+
+    if (addr_len == 0) {
+        printf("error: unable to parse address.\n");
+        return 1;
+    }
+
+    if (gnrc_netapi_set(dev, opt, 0, addr, addr_len) < 0) {
+        printf("_netif_set_addr: error: unable to set option");
+        return 1;
+    }
+
+    printf("success: set addr\n");
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 static int cmd_help(int argc, char **argv)
@@ -146,7 +202,7 @@ static int cmd_net(int argc, char **argv)
 	size_t numof = gnrc_netif_get(ifs);
 
     if (argc==2 && strcmp(argv[1], "help")==0 ){
-		printf("net info\t display network informations\r\nnet send\t send test BEEF frame\r\nnet chan XX\t Set radio chan XX (11<XX<26)\r\nnet mon\t Switch to promiscuous and dump reveived packets\r\n");
+		printf("net info\t display network informations\r\nnet send\t send test BEEF frame\r\nnet addr\tSet 802.15.4 addr\r\nnet pan\tSet pan id\r\nnet chan XX\t Set radio chan XX (11<XX<26)\r\nnet mon\t Switch to promiscuous and dump reveived packets\r\n");
 		return 0;
 	}
 
@@ -180,9 +236,18 @@ static int cmd_net(int argc, char **argv)
 		printf("Set radio channel to '%s'\r\n", argv[2]);
 		netif_set_i16(ifs[0], NETOPT_CHANNEL, argv[2]);
 	}
+    if (argc==3 && strcmp(argv[1], "pan")==0 ){
+		printf("Set panId to '%s'\r\n", argv[2]);
+		netif_set_i16(ifs[0], NETOPT_NID, argv[2]);
+	}
+    if (argc==3 && strcmp(argv[1], "addr")==0 ){
+		printf("Set long addr to '%s'\r\n", argv[2]);
+		netif_set_addr(ifs[0], NETOPT_ADDRESS_LONG, argv[2]);
+	}
     if (argc==2 && strcmp(argv[1], "mon")==0 ){
 		printf("Enable monitor .... RAW + PROMISC + CHANNEL 11\r\n");
-		//kernel_pid_t dump_pid=0;
+		netif_set_u16(ifs[0], NETOPT_NID, "0xF00D");
+		netif_set_addr(ifs[0], NETOPT_ADDRESS_LONG, "00:00:00:00:00:00:00:01");
 		netif_set_flag(ifs[0], NETOPT_RAWMODE, NETOPT_ENABLE);
 		netif_set_flag(ifs[0], NETOPT_PROMISCUOUSMODE, NETOPT_ENABLE);
 		gnrc_pktdump_init();

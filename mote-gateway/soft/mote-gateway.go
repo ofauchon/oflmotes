@@ -55,6 +55,19 @@ func decode_packet(p *Packet){
 	p.dmac=p.raw[10:26]
 	p.span=p.raw[26:30]
 	p.smac=p.raw[30:46]
+
+	cp1:="";
+	cp2:="";
+	for i:=7; i>=0; i--{
+	fmt.Println( p.smac[(2*i):(2*i+2)]);
+		cp1= cp1 + p.smac[2*i:2*i+2];
+		cp2= cp2 + p.dmac[2*i:2*i+2];
+	}
+	p.smac=cp1; 
+	p.dmac=cp2; 
+
+
+
 	p.payload = (string)(r); 
     ss := strings.Split(p.payload, ";")
 	p.datamap = make(map[string]interface{})

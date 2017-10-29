@@ -68,7 +68,6 @@ static int data_tx(kernel_pid_t dev, char* data, char data_sz)
     uint8_t addr[MAX_ADDR_LEN];
     size_t addr_len = MAX_ADDR_LEN;
 
-
     flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST; 
 
     // put packet together 

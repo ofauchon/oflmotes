@@ -16,17 +16,13 @@ import (
 var influx_url, influx_db,influx_user,influx_pass string;
 var serial_dev string;
 
-
-
-
 func doLog(format string, a ...interface{}) {
 	t := time.Now()
 	fmt.Printf("%s ", string(t.Format("20060102 150405")) )
 	fmt.Printf(format, a...)
 }
 
-type  Packet struct {
-	// FWVER:0102;CAPA:0004;BATLEV:2764;AWAKE_SEC:0;MAIN_LOOP:0;TEMP:+0.00;
+type Packet struct {
 	raw	string
 	payload	string
 	smac,dmac string
@@ -35,7 +31,7 @@ type  Packet struct {
 }
 
 func dump_packet(p *Packet){
-	//doLog("Dump: Raw:'%s'\n", p.raw);
+	doLog("Dump: Raw:'%s'\n", hex.Dump( []byte(p.raw)  ) );
 	doLog("Dump: Payload:'%s'\n", p.payload );
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
 	doLog("Dump:X Span:'%s' Dpab: '%s'\n", p.span, p.dpan);
@@ -56,6 +52,7 @@ func decode_packet(p *Packet){
 	p.span=p.raw[26:30]
 	p.smac=p.raw[30:46]
 
+	// Flip source/destination bytes
 	cp1:="";
 	cp2:="";
 	for i:=7; i>=0; i--{
@@ -65,8 +62,6 @@ func decode_packet(p *Packet){
 	}
 	p.smac=cp1; 
 	p.dmac=cp2; 
-
-
 
 	p.payload = (string)(r); 
     ss := strings.Split(p.payload, ";")
@@ -134,6 +129,18 @@ func serialworker(sig chan *Packet) {
 	}
 
 	n, err := s.Write([]byte("net chan 11\n"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	n, err = s.Write([]byte("net pan 61453\n"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	n, err = s.Write([]byte("net addr 00:00:00:00:00:00:00:01\n"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	n, err = s.Write([]byte("net pktdump\n"))
 	if err != nil {
 		log.Fatal(err)
 	}

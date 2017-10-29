@@ -57,15 +57,18 @@ static void _dump(gnrc_pktsnip_t *pkt)
 
 
     while (snip != NULL) {
-        printf("~~ SNIP %2i - size: %3u byte\n", snips, (unsigned int)snip->size);
+        //printf("~~ SNIP %2i - size: %3u byte\n", snips, (unsigned int)snip->size);
 		if (snip->type == GNRC_NETTYPE_UNDEF) {
-        	printf("~~ Got NETTYPE_UNDEF\n");
+        	//printf("~~ Got NETTYPE_UNDEF\n");
 			dump_hex_compact(snip->data, snip->size); 
 		}
 		if (snip->type == GNRC_NETTYPE_NETIF) {
-        	printf("~~ Got NETTYPE_NETIF\n");
+    //    	printf("~~ Got NETTYPE_NETIF\n");
 			gnrc_netif_hdr_t* hdr = snip->data; 
-			printf("LQI: %u RSSI: %u\n", hdr->lqi, hdr->rssi);
+	//		uint8_t **saddr;
+//			gnrc_netif_hdr_get_srcaddr(hdr,saddr);
+			printf("<LQI:%u;RSSI:%u;>\n", hdr->lqi, hdr->rssi);
+			printf("<INFO src_addr_len=%u>\n", hdr->src_l2addr_len);
 		}
 
         ++snips;

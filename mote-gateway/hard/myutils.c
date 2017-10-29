@@ -23,7 +23,7 @@ void dump_hex_compact(void* pData, size_t pLen)
 	{
 		printf("%02X", ((char*)pData)[p] );
 	}
-	printf("\n");
+	printf(">\n");
 }
 
 /*

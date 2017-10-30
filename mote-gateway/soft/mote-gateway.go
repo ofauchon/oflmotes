@@ -24,9 +24,10 @@ func doLog(format string, a ...interface{}) {
 
 type Packet struct {
 	raw	string
-	payload	string
 	smac,dmac string
 	span,dpan string
+	payload	string
+	lqi,rssi int64
 	datamap map[string]interface{}
 }
 
@@ -34,7 +35,8 @@ func dump_packet(p *Packet){
 	doLog("Dump: Raw:'%s'\n", hex.Dump( []byte(p.raw)  ) );
 	doLog("Dump: Payload:'%s'\n", p.payload );
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
-	doLog("Dump:X Span:'%s' Dpab: '%s'\n", p.span, p.dpan);
+	doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan);
+	doLog("Dump: lqi:'%s' rssi: '%s'\n", p.lqi, p.rssi);
 	for  k,v := range p.datamap {
 		doLog("Dump: key/values: '%s' value: '%s'\n", k, v)
 	}
@@ -43,29 +45,38 @@ func dump_packet(p *Packet){
 func decode_packet(p *Packet){
 
 	fmt.Println(p.raw)
-	r, err := hex.DecodeString(p.raw[18:]) // Skip header (macs)
+
+	p.datamap = make(map[string]interface{})
+
+	// Decore RAW 
+    ss := strings.Split(p.raw, ";")
+	for  _, pair := range ss {
+		z:=strings.Split(pair,"=")
+		if len(z)==2 {
+			if(z[0]=="PAYLOAD") {
+				p.payload=z[1];
+			}
+			if(z[0]=="SMAC") {
+				p.smac=z[1];
+			}
+			if(z[0]=="LQI") {
+				p.lqi, _ =strconv.ParseInt(z[1],10,64);
+			}
+			if(z[0]=="RSSI") {
+				p.rssi, _ =strconv.ParseInt(z[1],10,64);
+			}
+		}
+	}
+
+
+	k, err := hex.DecodeString(p.payload) // Skip header (macs)
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.dpan=p.raw[6:10]
-	p.dmac=p.raw[10:26]
-	p.span=p.raw[26:30]
-	p.smac=p.raw[30:46]
+	p.payload=string(k)
 
-	// Flip source/destination bytes
-	cp1:="";
-	cp2:="";
-	for i:=7; i>=0; i--{
-	fmt.Println( p.smac[(2*i):(2*i+2)]);
-		cp1= cp1 + p.smac[2*i:2*i+2];
-		cp2= cp2 + p.dmac[2*i:2*i+2];
-	}
-	p.smac=cp1; 
-	p.dmac=cp2; 
-
-	p.payload = (string)(r); 
-    ss := strings.Split(p.payload, ";")
-	p.datamap = make(map[string]interface{})
+	// Decore Payload 
+    ss = strings.Split(p.payload, ";")
 	for  _, pair := range ss {
 		z:=strings.Split(pair,":")
 		if len(z)==2 {
@@ -77,9 +88,18 @@ func decode_packet(p *Packet){
 				i, _  := strconv.ParseInt(z[1],10,64)
 				p.datamap[z[0]]=i
 			}
+
 		}
 	}
+
 }
+
+
+
+/*
+
+
+*/
 
 func push_influx(p *Packet){
 	// Create a new HTTPClient
@@ -103,6 +123,8 @@ func push_influx(p *Packet){
 
 	// Create a point and add to batch
 	tags := map[string]string{"id": p.smac}
+	p.datamap["RSSI"]=p.rssi
+	p.datamap["LQI"]=p.lqi
 	fields := p.datamap
 
 	if (len(p.datamap)>0){
@@ -150,18 +172,19 @@ func serialworker(sig chan *Packet) {
 	buftotal := make([]byte, 1)
 	buf := make([]byte, 1024)
 
+	// <PAYLOAD:46575645523A303130343B434150413A303030343B4241544C45563A323636313B4157414B455F5345433A303B4D41494E5F4C4F4F503A303B4552524F523A303031323B4800; SMAC:00:00:00:00:00:00:00:25;LQI:120;RSSI:61>
+	r, _ := regexp.Compile("<PAYLOAD=[^>]+>\n")
 	for {
 		n, _ = s.Read(buf)
 		if n > 0 {
 			buftotal = append(buftotal, buf[:n]...)
 
-			r, _ := regexp.Compile("<[0-9A-Z]+\n")
 			m := r.FindIndex(buftotal)
 			if m != nil {
 				fmt.Println("OK\n"); 
 
 				pkt :=  Packet {
-					raw: (string)(buftotal[m[0]+1:m[1]-1]),
+					raw: (string)(buftotal[m[0]+1:m[1]-2]),
 				}
 				buftotal = buftotal[m[1]:]
 

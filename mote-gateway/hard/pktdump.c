@@ -54,27 +54,27 @@ static void _dump(gnrc_pktsnip_t *pkt)
     int size = 0;
     gnrc_pktsnip_t *snip = pkt;
 
-
-
+   printf("<PAYLOAD=");
     while (snip != NULL) {
-        //printf("~~ SNIP %2i - size: %3u byte\n", snips, (unsigned int)snip->size);
 		if (snip->type == GNRC_NETTYPE_UNDEF) {
-        	//printf("~~ Got NETTYPE_UNDEF\n");
-			dump_hex_compact(snip->data, snip->size); 
+			// Dump
+			int8_t p;
+			for ( p=0; p<snip->size; p++) printf("%02X", ((char*)snip->data)[p] );
+    		printf(";");
 		}
 		if (snip->type == GNRC_NETTYPE_NETIF) {
-    //    	printf("~~ Got NETTYPE_NETIF\n");
 			gnrc_netif_hdr_t* hdr = snip->data; 
-	//		uint8_t **saddr;
-//			gnrc_netif_hdr_get_srcaddr(hdr,saddr);
-			printf("<LQI:%u;RSSI:%u;>\n", hdr->lqi, hdr->rssi);
-			printf("<INFO src_addr_len=%u>\n", hdr->src_l2addr_len);
-		}
+			char addr_str[8 * 3];
+			gnrc_netif_addr_to_str(addr_str,sizeof(addr_str),gnrc_netif_hdr_get_src_addr(hdr),8);
+			printf("SMAC=%s;LQI=%u;RSSI=%u",addr_str, hdr->lqi, hdr->rssi);
+			
+			}
 
         ++snips;
         size += snip->size;
         snip = snip->next;
     }
+   printf(">\n");
 
     //printf("~~ PKT    - %2i snips, total size: %3i byte\n", snips, size);
     gnrc_pktbuf_release(pkt);

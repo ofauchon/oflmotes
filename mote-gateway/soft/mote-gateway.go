@@ -36,7 +36,7 @@ func dump_packet(p *Packet){
 	doLog("Dump: Payload:'%s'\n", p.payload );
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac);
 	doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan);
-	doLog("Dump: lqi:'%s' rssi: '%s'\n", p.lqi, p.rssi);
+	doLog("Dump: lqi:'%d' rssi: '%d'\n", p.lqi, p.rssi);
 	for  k,v := range p.datamap {
 		doLog("Dump: key/values: '%s' value: '%s'\n", k, v)
 	}
@@ -122,10 +122,14 @@ func push_influx(p *Packet){
 	}
 
 	// Create a point and add to batch
-	tags := map[string]string{"id": p.smac}
+	tags := map[string]string{"ID": p.smac}
 	p.datamap["RSSI"]=p.rssi
 	p.datamap["LQI"]=p.lqi
 	fields := p.datamap
+
+	for  k,v := range p.datamap {
+		doLog("Dump_send_influx: key/values: '%s' value: '%s'\n", k, v)
+	}
 
 	if (len(p.datamap)>0){
 		doLog("Sending to influx server\n");

@@ -38,7 +38,7 @@ func dump_packet(p *Packet) {
 	doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan)
 	doLog("Dump: lqi:'%d' rssi: '%d'\n", p.lqi, p.rssi)
 	for k, v := range p.datamap {
-		doLog("Dump: key/values: '%s' value: '%s'\n", k, v)
+		doLog("Dump: key/values: '%s' value: '%v'\n", k, v)
 	}
 }
 
@@ -125,7 +125,7 @@ func push_influx(p *Packet) {
 	fields := p.datamap
 
 	for k, v := range p.datamap {
-		doLog("Dump_send_influx: key/values: '%s' value: '%s'\n", k, v)
+		doLog("Dump_send_influx: key/values: '%s' value: '%v'\n", k, v)
 	}
 
 	if len(p.datamap) > 0 {

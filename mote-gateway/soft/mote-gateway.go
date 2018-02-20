@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/influxdb/client/v2"
 	"github.com/tarm/serial"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,11 +16,28 @@ import (
 
 var influx_url, influx_db, influx_user, influx_pass string
 var serial_dev string
+var cnf_logfile string
+var cnf_daemon bool
+var logfile *os.File
 
 func doLog(format string, a ...interface{}) {
+	out := os.Stdout
 	t := time.Now()
-	fmt.Printf("%s ", string(t.Format("20060102 150405")))
-	fmt.Printf(format, a...)
+	var err error
+	if cnf_logfile != "" {
+		if logfile == nil {
+			fmt.Printf("Creating log file '%s'\n", cnf_logfile)
+			logfile, err = os.OpenFile(cnf_logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				//		out = bufio.NewWriter(f)
+				log.Fatal(err)
+			}
+		}
+		out = logfile
+	}
+
+	fmt.Fprintf(out, "%s ", string(t.Format("20060102 150405")))
+	fmt.Fprintf(out, format, a...)
 }
 
 type Packet struct {
@@ -44,7 +62,7 @@ func dump_packet(p *Packet) {
 
 func decode_packet(p *Packet) {
 
-	fmt.Println(p.raw)
+	doLog("RAW MSG: %s", p.raw)
 
 	p.datamap = make(map[string]interface{})
 
@@ -181,7 +199,7 @@ func serialworker(sig chan *Packet) {
 
 			m := r.FindIndex(buftotal)
 			if m != nil {
-				fmt.Println("OK\n")
+				//		fmt.Println("OK\n")
 
 				pkt := Packet{
 					raw: (string)(buftotal[m[0]+1 : m[1]-2]),
@@ -202,6 +220,8 @@ func parseArgs() {
 	flag.StringVar(&influx_user, "influx_user", "", "InfluxDB user")
 	flag.StringVar(&influx_pass, "influx_pass", "", "InfluxDB password")
 	flag.StringVar(&serial_dev, "dev", "", "/dev/ttyUSB1")
+	flag.StringVar(&cnf_logfile, "log", "", "Path to log file")
+	flag.BoolVar(&cnf_daemon, "daemon", false, "Run in background")
 	flag.Parse()
 
 	doLog("InfluxDB backend: Url:%s Db:%s\n", influx_url, influx_db)

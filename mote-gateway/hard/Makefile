@@ -7,7 +7,7 @@ TERMPROG=picocom
 TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= phywave-ofa
+BOARD ?= phywave-ftdi
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../../../RIOT
@@ -28,6 +28,10 @@ RIOTBASE ?= $(CURDIR)/../../../RIOT
 # which is not needed in a production environment but helps in the
 # development process:
 CFLAGS += -DDEVELHELP -g
+
+BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
+BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
+CFLAGS := $(CFLAGS) -DBUILDVERSION=\"$(BUILD_VERSION)_$(BUILD_DATE)\" 
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1

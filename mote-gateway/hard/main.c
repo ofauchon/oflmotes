@@ -123,7 +123,7 @@ static int cmd_help(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
-    printf("Available commands:\r\nnet\t Network interface\r\nreboot\r\nReboot board\r\n");
+    printf("Available commands:\r\nnet\t Network interface\r\nreboot\tReboot board\r\nabout\tAbout information\r\n");
     return 0;
 }
 
@@ -238,6 +238,14 @@ static int cmd_rand(int argc, char **argv)
 	return 0; 
 }
 */
+static int cmd_about(int argc, char **argv)
+{
+	(void) argc;
+	(void) argv; 
+	printf("OFLmotes gateway - Olivier Fauchon\r\n");
+	printf("Build %s \r\n", BUILDVERSION);
+	return 0;
+}
 
 
 static const shell_command_t shell_commands[] = {   
@@ -246,6 +254,7 @@ static const shell_command_t shell_commands[] = {
     { "net", "network commands", cmd_net },   
 //    { "rand", "get random", cmd_rand },   
     { "reboot", "reboot system",cmd_reboot },   
+    { "about", "about informations",cmd_about },   
     { NULL, NULL, NULL }                            
 }; 
 
@@ -256,7 +265,7 @@ int main(void)
     // INIT
     LED0_ON;
     LED1_ON;
-    puts("\r\n*** OFlabs 802.15.4 ***\r\n");
+    puts("\r\n*** OFlabs 802.15.4 Gateway ***\r\n");
 
     // Blink thread 
     thread_create(blink_thread_stack, sizeof(blink_thread_stack),

@@ -6,13 +6,16 @@ This is the firmware for the OFLmote Gateway.
 
 ```
 make clean
-make 
+make BOARD=phywave-ftdi
 make flash
 ```
 
   * How to use
 
 You can test it first with a serial console: 
+
+If you have 'picocom' installed, just run : 
+$ make term 
 
 
 Exemple of commands for listening to chan 11, pan 0xF00D (61453) to 802.15.4. 

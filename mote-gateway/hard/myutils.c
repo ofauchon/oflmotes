@@ -17,7 +17,7 @@
  */
 void dump_hex_compact(void* pData, size_t pLen)
 {
-	int8_t p; 
+	uint8_t p; 
 	printf("<");
 	for ( p=0; p<pLen; p++) 
 	{

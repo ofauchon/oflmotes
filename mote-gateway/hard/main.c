@@ -43,7 +43,6 @@
 #include "./pktdump.h"
 
 #define PAUSE 2
-#define MAX_ADDR_LEN            (8U)
 
 
 /* This was my first 'hello world' thread (led blinking) */
@@ -69,8 +68,8 @@ static int data_tx(kernel_pid_t dev, char* data, char data_sz)
     gnrc_pktsnip_t *pkt, *hdr;
     gnrc_netif_hdr_t *nethdr;
     uint8_t flags = 0x00;
-    uint8_t addr[MAX_ADDR_LEN];
-    size_t addr_len = MAX_ADDR_LEN;
+    uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];
+    size_t addr_len = IEEE802154_LONG_ADDRESS_LEN;
 
     flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST; 
 
@@ -147,17 +146,19 @@ static int cmd_net(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
-	kernel_pid_t ifs[GNRC_NETIF_NUMOF];
-	size_t numof = gnrc_netif_get(ifs);
+    size_t numof = gnrc_netif_numof();
 
+    gnrc_netif_t* iff=NULL;
     if (argc==2 && strcmp(argv[1], "info")==0 ){
         printf("Network info \r\n");
 		// Initialize network 
 		printf("Number of interfaces: %d\r\n", numof); 
+
+	while ( (iff=gnrc_netif_iter(iff)) ) {
 		netstats_t *stats;
-		int	res = gnrc_netapi_get(ifs[0], NETOPT_STATS, 0, &stats, sizeof(&stats));
+		int	res = gnrc_netapi_get(iff->pid, NETOPT_STATS, 0, &stats, sizeof(&stats));
 		if (res>=0){
-        printf("           Statistics \r\n"
+	        printf("           Statistics \r\n"
                "            RX packets %u  bytes %u\r\n"
                "            TX packets %u (Multicast: %u)  bytes %u\r\n"
                "            TX succeeded %u errors %u\r\n",
@@ -167,39 +168,40 @@ static int cmd_net(int argc, char **argv)
                (unsigned) stats->tx_mcast_count,
                (unsigned) stats->tx_bytes,
                (unsigned) stats->tx_success,
-               (unsigned) stats->tx_failed);
+	        (unsigned) stats->tx_failed);
 		}
+}
 		return 0; 
 
     }
     else if (argc==3 && strcmp(argv[1], "chan")==0 ){
 		printf("Set radio channel to '%s'\r\n", argv[2]);
     	int16_t val = atoi(argv[2]);
-    	netapi_set(ifs[0], NETOPT_CHANNEL, 0, (int16_t *)&val, sizeof(int16_t));
+    	gnrc_netapi_set( iff->pid, NETOPT_CHANNEL, 0, (int16_t *)&val, sizeof(int16_t));
 		return 0; 
 	}
     else if (argc==3 && strcmp(argv[1], "pan")==0 ){
 		printf("Set pan id to '%s'\r\n", argv[2]);
     	int16_t val = atoi(argv[2]);
 		printf(" val is %d\r\n ", val);
-    	netapi_set(ifs[0], NETOPT_NID, 0, (int16_t *)&val, sizeof(int16_t));
+    	netapi_set(iff->pid, NETOPT_NID, 0, (int16_t *)&val, sizeof(int16_t));
 		return 0; 
 	}
     else if (argc==3 && strcmp(argv[1], "addr")==0 ){
 		printf("Set long addr to '%s'\r\n", argv[2]);
-    	uint8_t addr[MAX_ADDR_LEN];
-    	size_t addr_len = gnrc_netif_addr_from_str(addr, sizeof(addr), argv[2]);
+    	uint8_t addr[IEEE802154_LONG_ADDRESS_LEN];
+    	size_t addr_len = gnrc_netif_addr_from_str(argv[2], addr);
     	if (addr_len == 0) {
         	printf("error: unable to parse address.\n");
         	return 1;
     	}
-    	netapi_set(ifs[0], NETOPT_ADDRESS_LONG, 0, addr, addr_len);
+    	netapi_set(iff->pid, NETOPT_ADDRESS_LONG, 0, addr, addr_len);
 		return 0;
 	}
     else if (argc==2 && strcmp(argv[1], "promisc")==0 ){
 		netopt_enable_t fl=NETOPT_ENABLE;
-		netapi_set(ifs[0], NETOPT_PROMISCUOUSMODE, 0, &fl, sizeof(fl));
-		netapi_set(ifs[0], NETOPT_RAWMODE, 0, &fl, sizeof(fl));
+		netapi_set(iff->pid, NETOPT_PROMISCUOUSMODE, 0, &fl, sizeof(fl));
+		netapi_set(iff->pid, NETOPT_RAWMODE, 0, &fl, sizeof(fl));
 		return 0; 
 	}
     else if (argc==2 && strcmp(argv[1], "pktdump")==0 ){
@@ -221,22 +223,28 @@ static int cmd_net(int argc, char **argv)
 }
 
 // Some tests
+// 
+// 
+/*
 static int cmd_rand(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
 	uint8_t data[4]; 
 	memset(data,0,4);
 
 	hwrng_read(data,4); 
-    printf("Random values %02X %02X %02X %02X \r\n", data[0], data[1], data[2], data[3]);
+	printf("Random values %02X %02X %02X %02X \r\n", data[0], data[1], data[2], data[3]);
 	return 0; 
 }
+*/
 
 
 static const shell_command_t shell_commands[] = {   
     { "?", "cmd help", cmd_help },                                                  
     { "help", "cmd help", cmd_help },                                                  
     { "net", "network commands", cmd_net },   
-    { "rand", "get random", cmd_rand },   
+//    { "rand", "get random", cmd_rand },   
     { "reboot", "reboot system",cmd_reboot },   
     { NULL, NULL, NULL }                            
 }; 

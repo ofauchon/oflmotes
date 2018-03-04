@@ -58,14 +58,14 @@ static void _dump(gnrc_pktsnip_t *pkt)
     while (snip != NULL) {
 		if (snip->type == GNRC_NETTYPE_UNDEF) {
 			// Dump
-			int8_t p;
+			uint8_t p;
 			for ( p=0; p<snip->size; p++) printf("%02X", ((char*)snip->data)[p] );
-    		printf(";");
+ 	   		printf(";");
 		}
 		if (snip->type == GNRC_NETTYPE_NETIF) {
 			gnrc_netif_hdr_t* hdr = snip->data; 
 			char addr_str[8 * 3];
-			gnrc_netif_addr_to_str(addr_str,sizeof(addr_str),gnrc_netif_hdr_get_src_addr(hdr),8);
+			gnrc_netif_addr_to_str(gnrc_netif_hdr_get_src_addr(hdr),8, addr_str);
 			printf("SMAC=%s;LQI=%u;RSSI=%u",addr_str, hdr->lqi, hdr->rssi);
 			
 			}

@@ -41,7 +41,8 @@ USEMODULE += shell
 USEMODULE += od
 USEMODULE += netstats_l2 
 USEMODULE += gnrc_mac 
-USEMODULE += gnrc_netdev 
+USEMODULE += random 
+#USEMODULE += gnrc_netdev 
 
 FEATURES_REQUIRED = periph_uart
 

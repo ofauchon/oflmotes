@@ -149,12 +149,18 @@ static int cmd_net(int argc, char **argv)
     size_t numof = gnrc_netif_numof();
 
     gnrc_netif_t* iff=NULL;
+    iff=gnrc_netif_iter(iff); 
+    if (iff== NULL) {
+	printf("ERROR : NO INTERFACE \r\n");
+	return 0; 
+	}
+
     if (argc==2 && strcmp(argv[1], "info")==0 ){
         printf("Network info \r\n");
 		// Initialize network 
 		printf("Number of interfaces: %d\r\n", numof); 
 
-	while ( (iff=gnrc_netif_iter(iff)) ) {
+
 		netstats_t *stats;
 		int	res = gnrc_netapi_get(iff->pid, NETOPT_STATS, 0, &stats, sizeof(&stats));
 		if (res>=0){
@@ -169,11 +175,9 @@ static int cmd_net(int argc, char **argv)
                (unsigned) stats->tx_bytes,
                (unsigned) stats->tx_success,
 	        (unsigned) stats->tx_failed);
-		}
-}
 		return 0; 
-
-    }
+    		}
+	}
     else if (argc==3 && strcmp(argv[1], "chan")==0 ){
 		printf("Set radio channel to '%s'\r\n", argv[2]);
     	int16_t val = atoi(argv[2]);

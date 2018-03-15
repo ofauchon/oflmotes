@@ -24,10 +24,15 @@ PAPP 02340 *
 => PTEC   => Billing period
 
 
-Boards: 
+References: 
 
-Phywave KW2X
+Phywave KW2X:
 https://github.com/RIOT-OS/RIOT/wiki/Board%3A-Phytec-phyWAVE-KW22
 
 
+Linky protocol:
+https://www.yadnet.com/domotique/protocole-teleinfo-du-compteur-linky/
 
+Pitinfo interface board:
+https://www.tindie.com/products/Hallard/pitinfo/
+https://github.com/hallard/teleinfo/tree/master/PiTInfo

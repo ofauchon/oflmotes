@@ -304,9 +304,8 @@ main (void)
 {
 
   // INIT
-  LED0_ON;
-  LED1_ON;
-  puts ("\r\n*** OFlabs 802.15.4 Teleinfo mote ***\r\n");
+  printf("*** OFlabs 802.15.4 OFLMote Sensor - Teleinfo ***\r\n");
+  printf("*** Release %s\r\n", DBUILDVERSION)
   prepare_all ();
 
   results.base = 0;

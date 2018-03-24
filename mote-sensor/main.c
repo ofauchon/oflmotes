@@ -43,6 +43,8 @@
 #include "strings.h"
 
 #include "periph/uart.h"
+#include "periph/gpio.h"
+
 
 #define PAUSE 60
 #define UART_BUFSIZE        (128U)
@@ -62,13 +64,14 @@ static uart_ctx_t ctx[UART_NUMOF];
 
 typedef struct
 {
-  uint16_t papp;
-  uint16_t iinst;
-  uint32_t base;
+  int16_t papp;
+  int16_t iinst;
+  int32_t base;
 } results_t;
 static results_t results;
 
 static kernel_pid_t ifpid = 0;
+static uint8_t cur_pitinfo = 0 ; 
 
 /* Blink led thread */
 #define BLINKER_PRIO        (THREAD_PRIORITY_MAIN - 1)
@@ -122,12 +125,17 @@ data_tx (char *data, char data_sz)
 static void *
 blinker_thread (void *arg)
 {
+  msg_t msg;
+  msg_t msg_queue[8];
+  msg_init_queue (msg_queue, 8);
   (void) arg;
+
   while (1)
     {
-      LED0_TOGGLE;
-      LED1_TOGGLE;
-      xtimer_sleep (1);
+      msg_receive (&msg);
+      LED0_ON;
+      xtimer_usleep(250);
+      LED1_OFF;
     }
   return NULL;
 }
@@ -156,26 +164,32 @@ processor_thread (void *arg)
 	  results.base = atoi (buffer + 5);
 	}
       //'PAPP 02340 *'
-      if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
+     else if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
 	{
-	  //      printf("PAPP: %s", buffer);
 	  buffer[10] = 0;
 	  results.papp = atoi (buffer + 5);
 	}
       //'IINST 010 X'
-      if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
+     else if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
 	{
 	  buffer[9] = 0;
 	  results.iinst = atoi (buffer + 6);
 	}
 
-      if (results.papp > 0 && results.iinst > 0 && results.base > 0)
+      if (results.papp >= 0 && results.iinst >= 0 && results.base >= 0)
 	{
 	  bzero (buffer, sizeof (buffer));
-	  sprintf (buffer, "PAPP:%i;BASE:%li;IINST:%i", results.papp,
-		   results.base, results.iinst);
+	  sprintf (buffer, "PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
+        cur_pitinfo, results.papp,
+		cur_pitinfo, results.base, 
+        cur_pitinfo, results.iinst);
 	  printf ("=> %s \r\n", buffer);
 	  data_tx (buffer, strlen (buffer));
+
+      // Notify Blinker
+      msg_t msg;
+      msg.content.value = 1;
+      msg_send (&msg, blinker_pid);
 
 	  results.papp = 0;
 	  results.base = 0;
@@ -224,11 +238,11 @@ netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
   ret = gnrc_netapi_set (pid, opt, context, data, data_len);
   if (ret < 0)
     {
-      printf ("!: netapi_set: Can't set option\n");
+      printf ("!: netapi_set: Can't set option\r\n");
     }
   else
     {
-      printf ("#: netapi_set: Success.\n");
+      printf ("#: netapi_set: Success.\r\n");
     }
   return ret;
 }
@@ -240,6 +254,7 @@ prepare_all (void)
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
 
   printf ("Start HW init\r\n");
+
 
   /* initialize UART */
   /* initialize ringbuffers */
@@ -253,10 +268,10 @@ prepare_all (void)
   res = uart_init (UART_DEV (1), 1200, rx_cb, (void *) dev);
   if (res != UART_OK)
     {
-      puts ("Error: Unable to initialize UART device\n");
+      puts ("Error: Unable to initialize UART device\r\n");
       return;
     }
-  printf ("Successfully initialized UART_DEV(%i)\n", dev);
+  printf ("Successfully initialized UART_DEV(%i)\r\n", dev);
 
 
   /* initialize Network */
@@ -299,18 +314,17 @@ prepare_all (void)
 }
 
 
+
+
 int
 main (void)
 {
 
   // INIT
   printf("*** OFlabs 802.15.4 OFLMote Sensor - Teleinfo ***\r\n");
-  printf("*** Release %s\r\n", DBUILDVERSION)
+  printf("*** Release %s\r\n", BUILDVERSION);
   prepare_all ();
 
-  results.base = 0;
-  results.iinst = 0;
-  results.papp = 0;
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
@@ -322,14 +336,43 @@ main (void)
 				 PROCESSOR_PRIO, 0,
 				 processor_thread, NULL, "processor_thread");
 
+  // Initialize PTE2 and PTE3
+  gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
+  gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
+
   while (1)
     {
-      printf ("Wake up, start uart\r\n");
+      cur_pitinfo=1;
+      results.base = -1;
+      results.iinst = -1;
+      results.papp = -1;
+      printf("Power on PiTInfo 1\r\n");
+      gpio_set(GPIO_PIN(PORT_E,2));
       uart_poweron (UART_DEV (1));
       xtimer_sleep (3);
+      printf("Shutdown uart & unpower Telinfo and go to sleep\r\n");
+      uart_poweroff(UART_DEV (1));
+      gpio_clear(GPIO_PIN(PORT_E,2));
 
-      printf ("stop uart, adn sleep \r\n");
+      cur_pitinfo=2;
+      results.base = -1;
+      results.iinst = -1;
+      results.papp = -1;
+      printf("Power on PiTInfo 2\r\n");
+      gpio_set(GPIO_PIN(PORT_E,3));
+      uart_poweron (UART_DEV (1));
+      xtimer_sleep (3);
+      printf("Shutdown uart & unpower Telinfo and go to sleep\r\n");
+      uart_poweroff(UART_DEV (1));
+      gpio_clear(GPIO_PIN(PORT_E,3));
+
+
+
+
+      // Sleep / Powersave
+      printf("Hibernate\r\n");
       xtimer_sleep (PAUSE);
+      printf("WakeUP\r\n");
 
     }
 }

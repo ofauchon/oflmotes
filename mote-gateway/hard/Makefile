@@ -31,7 +31,7 @@ CFLAGS += -DDEVELHELP -g
 
 BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
 BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
-CFLAGS := $(CFLAGS) -DBUILDVERSION=\"$(BUILD_VERSION)_$(BUILD_DATE)\" 
+CFLAGS := $(CFLAGS) -DBUILDVERSION=\"git-$(BUILD_VERSION)_$(BUILD_DATE)\" 
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1

@@ -62,6 +62,8 @@ typedef struct
 } uart_ctx_t;
 static uart_ctx_t ctx[UART_NUMOF];
 
+
+
 typedef struct
 {
   int16_t papp;
@@ -122,6 +124,9 @@ data_tx (char *data, char data_sz)
 }
 
 
+/*
+ *  Simple led blink when 
+ */
 static void *
 blinker_thread (void *arg)
 {
@@ -141,6 +146,13 @@ blinker_thread (void *arg)
 }
 
 
+/*
+ * Processor Thread 
+ * 
+ * Loop and process messages from UART.
+ * Append new uart char to a ringbuffer
+ * Send message to 
+ */
 static void *
 processor_thread (void *arg)
 {
@@ -206,7 +218,13 @@ processor_thread (void *arg)
 }
 
 
-// RX Callback
+/* 
+ * UART RX Callback function
+ *
+ * Discart 8th bit as PitInfo Teleinformation interface is 7N1
+ * Append new char to ringbuffer
+ * If new char is newline, send a message to processor thread
+ */
 static void
 rx_cb (void *arg, uint8_t data)
 {
@@ -247,18 +265,18 @@ netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
   return ret;
 }
 
-
+/*
+ * HW Initialisation
+ */ 
 static void
 prepare_all (void)
 {
-  uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
 
   printf ("Start HW init\r\n");
-
+  uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
 
   /* initialize UART */
-  /* initialize ringbuffers */
-  for (unsigned i = 0; i < UART_NUMOF; i++)
+  for (unsigned i = 0; i < UART_NUMOF; i++) // Init ringbuffers for all UARTs
     {
       ringbuffer_init (&(ctx[i].rx_buf), ctx[i].rx_mem, UART_BUFSIZE);
     }
@@ -272,7 +290,6 @@ prepare_all (void)
       return;
     }
   printf ("Successfully initialized UART_DEV(%i)\r\n", dev);
-
 
   /* initialize Network */
   gnrc_netif_t *iff = NULL;
@@ -322,7 +339,8 @@ main (void)
 
   // INIT
   printf("*** OFlabs 802.15.4 OFLMote Sensor - Teleinfo ***\r\n");
-  printf("*** Release %s\r\n", BUILDVERSION);
+//  printf("*** Riot Release     %s\r\n", RIOTVERSION);
+  printf("*** OFlMotes Release %s\r\n", MOTESVERSION);
   prepare_all ();
 
 
@@ -342,6 +360,10 @@ main (void)
 
   while (1)
     {
+      netopt_state_t state;
+      state = NETOPT_STATE_TX;
+      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+
       cur_pitinfo=1;
       results.base = -1;
       results.iinst = -1;
@@ -366,11 +388,10 @@ main (void)
       uart_poweroff(UART_DEV (1));
       gpio_clear(GPIO_PIN(PORT_E,3));
 
-
-
-
       // Sleep / Powersave
       printf("Hibernate\r\n");
+      state = NETOPT_STATE_IDLE;
+      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
       xtimer_sleep (PAUSE);
       printf("WakeUP\r\n");
 

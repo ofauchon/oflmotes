@@ -14,7 +14,7 @@ BOARD ?= pba-d-01-kw2x
 
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE ?= $(CURDIR)/../../RIOT
+RIOTBASE ?= $(CURDIR)/../../../RIOT
 
 # Uncomment these lines if you want to use platform support from external
 # repositories:
@@ -33,9 +33,12 @@ RIOTBASE ?= $(CURDIR)/../../RIOT
 # development process:
 CFLAGS += -DDEVELHELP -g
 
-BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
+#RIOT_BUILD_VERSION := $(shell cd $$RIOTBASE; pwd; git log | head -n 1 | cut -d\  -f2 )
+#CFLAGS := $(CFLAGS) -DRIOTVERSION=\"git.$(RIOT_BUILD_VERSION).$(BUILD_DATE)\"
+
+MOTES_BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
 BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
-CFLAGS := $(CFLAGS) -DBUILDVERSION=\"git.$(BUILD_VERSION).$(BUILD_DATE)\"
+CFLAGS := $(CFLAGS) -DMOTESVERSION=\"git.$(MOTES_BUILD_VERSION).$(BUILD_DATE)\"
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1

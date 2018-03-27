@@ -1,20 +1,27 @@
 # Dual Teleinfo Power Meter monitoring
 
+1. Introduction 
 
-1. Components
+This project is aimed at monitoring electrical production from solar panels, and 
+electricity consumption from house devices.  
+
+2. List of materials
 
   - Board: Phytec phyWAVE KW22
   - Teleinfo interface : Hallard PitInfo
+  - Power meters with Teleinfo interface 
 
 
-<img src="resources/circuit1.svg">
+<img src="resources/circuit1.svg" width=200>
 
-1. Teleinfo protocol
+3. Introduction to Teleinfo protocol
 
-Data format: 1200 baud / 7 bit data / 1 bit stop / Parity
+French power meters have embedded Telinfo interface
+( Serial interface : 1200 baud / 7 bit data / 1 bit stop / Parity)
 
-Example: 
+PitInfo interfaces are used to adapt signal levels between the PowerMeters and the UART.
 
+Protocole is quite simple: 
 
     MOTDETAT 000000 B
     ADCO 031028256512 :
@@ -33,6 +40,16 @@ Example:
     => BASE   => Total consumed  (Wh)
     => PAAP   => Apparent power
     => PTEC   => Billing period
+
+
+4. Wiring 
+
+<todo>
+
+5. Flash the board
+
+   make flash 
+
 
 
 ## References: 

@@ -51,8 +51,7 @@
 
 // Node ID 
 #ifndef NODE_ID
-#warning '** Using default NODE_NO=0x99'
-#define NODE_ID 0x99
+#error 'NODE_ID is undefined'
 #endif
 
 typedef struct
@@ -61,8 +60,6 @@ typedef struct
   ringbuffer_t rx_buf;
 } uart_ctx_t;
 static uart_ctx_t ctx[UART_NUMOF];
-
-
 
 typedef struct
 {
@@ -76,7 +73,7 @@ static kernel_pid_t ifpid = 0;
 static uint8_t cur_pitinfo = 0 ; 
 
 /* Blink led thread */
-#define BLINKER_PRIO        (THREAD_PRIORITY_MAIN - 1)
+#define BLINKER_PRIO        (THREAD_PRIORITY_MAIN - 2)
 static kernel_pid_t blinker_pid;
 static char blinker_stack[THREAD_STACKSIZE_MAIN];
 
@@ -88,8 +85,7 @@ static char processor_stack[THREAD_STACKSIZE_MAIN];
 /*
  * Send 802.16.4 frame 
  */
-static int
-data_tx (char *data, char data_sz)
+static int data_tx (char *data, char data_sz)
 {
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
@@ -125,22 +121,21 @@ data_tx (char *data, char data_sz)
 
 
 /*
- *  Simple led blink when 
+ * Thread for led blinking 
  */
-static void *
-blinker_thread (void *arg)
+static void* blinker_thread (void *arg)
 {
   msg_t msg;
   msg_t msg_queue[8];
   msg_init_queue (msg_queue, 8);
   (void) arg;
-
   while (1)
     {
       msg_receive (&msg);
-      LED0_ON;
-      xtimer_usleep(250);
+      LED1_ON;
+      xtimer_sleep(1);
       LED1_OFF;
+      xtimer_sleep(1);
     }
   return NULL;
 }
@@ -153,8 +148,7 @@ blinker_thread (void *arg)
  * Append new uart char to a ringbuffer
  * Send message to 
  */
-static void *
-processor_thread (void *arg)
+static void* processor_thread (void *arg)
 {
   (void) arg;
   msg_t msg;
@@ -354,7 +348,7 @@ main (void)
 				 PROCESSOR_PRIO, 0,
 				 processor_thread, NULL, "processor_thread");
 
-  // Initialize PTE2 and PTE3
+  // Initialize PTE2 and PTE3 as output to power-on PitInfo(s)
   gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
   gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
 
@@ -389,9 +383,9 @@ main (void)
       gpio_clear(GPIO_PIN(PORT_E,3));
 
       // Sleep / Powersave
-      printf("Hibernate\r\n");
       state = NETOPT_STATE_IDLE;
       netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+      printf("Hibernate\r\n");
       xtimer_sleep (PAUSE);
       printf("WakeUP\r\n");
 

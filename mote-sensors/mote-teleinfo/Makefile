@@ -43,7 +43,7 @@ CFLAGS := $(CFLAGS) -DMOTESVERSION=\"git.$(MOTES_BUILD_VERSION).$(BUILD_DATE)\"
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
-USEMODULE += xtimer
+
 # Add default network interface for the board
 USEMODULE += gnrc_netdev_default
 # Initialize the interfaces as gnrc interfaces
@@ -57,6 +57,7 @@ USEMODULE += gnrc_mac
 #USEMODULE += gnrc_netdev 
 
 FEATURES_REQUIRED = periph_uart
+FEATURES_REQUIRED += periph_rtt
 
 
 BOARD_PROVIDES_NETIF := airfy-beacon cc2538dk fox iotlab-m3 iotlab-a8-m3 mulle \

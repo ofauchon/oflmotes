@@ -25,7 +25,6 @@
 
 #include "thread.h"
 #include "timex.h"
-#include "xtimer.h"
 
 #include "shell_commands.h"
 #include "shell.h"
@@ -45,8 +44,11 @@
 #include "periph/uart.h"
 #include "periph/gpio.h"
 
-
 #define PAUSE 60
+#define TICKS_TO_PAUSE       (PAUSE * RTT_FREQUENCY)
+static volatile uint32_t last;
+
+
 #define UART_BUFSIZE        (128U)
 
 // Node ID 
@@ -133,9 +135,9 @@ static void* blinker_thread (void *arg)
     {
       msg_receive (&msg);
       LED1_ON;
-      xtimer_sleep(1);
+      //xtimer_sleep(1);
       LED1_OFF;
-      xtimer_sleep(1);
+      //xtimer_sleep(1);
     }
   return NULL;
 }
@@ -352,42 +354,52 @@ main (void)
   gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
   gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
 
+
+  rtt_init();
+  msg_t msg;
+  msg_t msg_queue[8];
+  msg_init_queue (msg_queue, 8);
+
   while (1)
     {
-      netopt_state_t state;
-      state = NETOPT_STATE_TX;
-      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        // Enable Radio for TX
+        netopt_state_t state;
+        state = NETOPT_STATE_TX;
+        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
 
-      cur_pitinfo=1;
-      results.base = -1;
-      results.iinst = -1;
-      results.papp = -1;
-      printf("Power on PiTInfo 1\r\n");
-      gpio_set(GPIO_PIN(PORT_E,2));
-      uart_poweron (UART_DEV (1));
-      xtimer_sleep (3);
-      printf("Shutdown uart & unpower Telinfo and go to sleep\r\n");
-      uart_poweroff(UART_DEV (1));
-      gpio_clear(GPIO_PIN(PORT_E,2));
+        // Read PitInfo #1
+        printf("Read PiTInfo #1\r\n");
+        cur_pitinfo=1;
+        results.base = -1;
+        results.iinst = -1;
+        results.papp = -1;
+        gpio_set(GPIO_PIN(PORT_E,2));
+        uart_poweron (UART_DEV (1));
+        uart_poweroff(UART_DEV (1));
+        gpio_clear(GPIO_PIN(PORT_E,2));
+        printf("End read PiTInfo #1\r\n");
 
-      cur_pitinfo=2;
-      results.base = -1;
-      results.iinst = -1;
-      results.papp = -1;
-      printf("Power on PiTInfo 2\r\n");
-      gpio_set(GPIO_PIN(PORT_E,3));
-      uart_poweron (UART_DEV (1));
-      xtimer_sleep (3);
-      printf("Shutdown uart & unpower Telinfo and go to sleep\r\n");
-      uart_poweroff(UART_DEV (1));
-      gpio_clear(GPIO_PIN(PORT_E,3));
+        // Read PitInfo #2
+        printf("Read PiTInfo #2\r\n");
+        cur_pitinfo=2;
+        results.base = -1;
+        results.iinst = -1;
+        results.papp = -1;
+        gpio_set(GPIO_PIN(PORT_E,3));
+        uart_poweron (UART_DEV (1));
+        uart_poweroff(UART_DEV (1));
+        gpio_clear(GPIO_PIN(PORT_E,3));
+        printf("End read PiTInfo #2\r\n");
 
-      // Sleep / Powersave
-      state = NETOPT_STATE_IDLE;
-      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-      printf("Hibernate\r\n");
-      xtimer_sleep (PAUSE);
-      printf("WakeUP\r\n");
+        // Powersave
+        state = NETOPT_STATE_IDLE;
+        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        printf("Hibernate\r\n");
+
+        // Pause with RTT Timers
+        last += TICKS_TO_PAUSE;
+        last &= RTT_MAX_VALUE;
+        rtt_set_alarm(last, cb, 0);
 
     }
 }

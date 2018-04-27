@@ -58,6 +58,7 @@ USEMODULE += gnrc_mac
 
 FEATURES_REQUIRED = periph_uart
 FEATURES_REQUIRED += periph_rtt
+FEATURES_REQUIRED += periph_adc
 
 
 BOARD_PROVIDES_NETIF := airfy-beacon cc2538dk fox iotlab-m3 iotlab-a8-m3 mulle \

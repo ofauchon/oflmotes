@@ -21,13 +21,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "periph/hwrng.h"
+#include "board.h"
+#include "periph_conf.h"
 
 #include "thread.h"
 #include "timex.h"
+#include "periph/adc.h"
 
-#include "shell_commands.h"
-#include "shell.h"
+
 
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netapi.h"
@@ -43,6 +44,8 @@
 
 #include "periph/uart.h"
 #include "periph/gpio.h"
+#include "periph/rtt.h"
+#include "periph/hwrng.h"
 
 #define PAUSE 60
 #define TICKS_TO_PAUSE       (PAUSE * RTT_FREQUENCY)
@@ -84,11 +87,15 @@ static char blinker_stack[THREAD_STACKSIZE_MAIN];
 static kernel_pid_t processor_pid;
 static char processor_stack[THREAD_STACKSIZE_MAIN];
 
+/* Main thread */
+static kernel_pid_t main_pid;
+
 /*
  * Send 802.16.4 frame 
  */
 static int data_tx (char *data, char data_sz)
 {
+      puts ("data_tx\r\n");
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
@@ -160,6 +167,13 @@ static void* processor_thread (void *arg)
 
   while (1)
     {
+    // Enable bandgap reference for battery
+    PMC->REGSC |= 1;
+    // Init ADC line 6
+    adc_init(ADC_LINE(6));
+    int sample = adc_sample(ADC_LINE(6), ADC_RES_10BIT);
+    PMC->REGSC &= (uint8_t) ~1;
+
       msg_receive (&msg);
       uart_t dev = (uart_t) msg.content.value;
       bzero (buffer, sizeof (buffer));
@@ -187,7 +201,8 @@ static void* processor_thread (void *arg)
       if (results.papp >= 0 && results.iinst >= 0 && results.base >= 0)
 	{
 	  bzero (buffer, sizeof (buffer));
-	  sprintf (buffer, "PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
+	  sprintf (buffer, "BATLEV:%d;PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
+       (int)(1024*1000/sample),
         cur_pitinfo, results.papp,
 		cur_pitinfo, results.base, 
         cur_pitinfo, results.iinst);
@@ -221,8 +236,7 @@ static void* processor_thread (void *arg)
  * Append new char to ringbuffer
  * If new char is newline, send a message to processor thread
  */
-static void
-rx_cb (void *arg, uint8_t data)
+static void rx_cb (void *arg, uint8_t data)
 {
   uart_t dev = (uart_t) arg;
   data &= 0x7F;
@@ -326,11 +340,21 @@ prepare_all (void)
   printf ("Done HW init\r\n");
 }
 
+      
+
+void alarm_cb(void *arg)
+{
+    (void)arg;
+      // Notify Blinker
+      msg_t msg;
+      msg.content.value = 1;
+      msg_send (&msg, main_pid);
+
+}
 
 
 
-int
-main (void)
+int main (void)
 {
 
   // INIT
@@ -359,6 +383,8 @@ main (void)
   msg_t msg;
   msg_t msg_queue[8];
   msg_init_queue (msg_queue, 8);
+
+  main_pid=thread_getpid();
 
   while (1)
     {
@@ -391,7 +417,7 @@ main (void)
         gpio_clear(GPIO_PIN(PORT_E,3));
         printf("End read PiTInfo #2\r\n");
 
-        // Powersave
+        // Powersave (Disable Radio)
         state = NETOPT_STATE_IDLE;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
         printf("Hibernate\r\n");
@@ -399,7 +425,10 @@ main (void)
         // Pause with RTT Timers
         last += TICKS_TO_PAUSE;
         last &= RTT_MAX_VALUE;
-        rtt_set_alarm(last, cb, 0);
+        rtt_set_alarm(last, alarm_cb, 0);
+
+        // Wait for timer message
+        msg_receive (&msg);
 
     }
 }

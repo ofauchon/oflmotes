@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, Olivier Fauchon <ofauchon2204@gmail.com>
+ * Copyright (C) 2018, Olivier Fauchon <ofauchon2204@gmail.com>
 
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -11,7 +11,7 @@
  * @{
  *
  * @file
- * @brief       802.15.4 Sensor
+ * @brief       802.15.4 Teleinfo Mote Sensor
  *
  * @author      Olivier Fauchon <ofauchon2204@gmail.com>
  *
@@ -26,9 +26,7 @@
 
 #include "thread.h"
 #include "timex.h"
-#include "periph/adc.h"
-
-
+#include "xtimer.h"
 
 #include "net/gnrc/netif.h"
 #include "net/gnrc/netapi.h"
@@ -44,17 +42,15 @@
 
 #include "periph/uart.h"
 #include "periph/gpio.h"
-#include "periph/rtt.h"
 #include "periph/hwrng.h"
+#include "periph/adc.h"
 
-#define PAUSE 60
-#define TICKS_TO_PAUSE       (PAUSE * RTT_FREQUENCY)
-static volatile uint32_t last;
-
+#define CYCLE_PAUSE_SEC 60
 
 #define UART_BUFSIZE        (128U)
 
-// Node ID 
+// Node ID must be passed at compilation time
+// Todo Use EEPROM for NodeID definition
 #ifndef NODE_ID
 #error 'NODE_ID is undefined'
 #endif
@@ -95,7 +91,7 @@ static kernel_pid_t main_pid;
  */
 static int data_tx (char *data, char data_sz)
 {
-      puts ("data_tx\r\n");
+  printf("data_tx: %s\r\n", data);
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
@@ -134,17 +130,18 @@ static int data_tx (char *data, char data_sz)
  */
 static void* blinker_thread (void *arg)
 {
+  (void) arg;
   msg_t msg;
   msg_t msg_queue[8];
   msg_init_queue (msg_queue, 8);
-  (void) arg;
   while (1)
     {
+      // 
       msg_receive (&msg);
-      LED1_ON;
-      //xtimer_sleep(1);
-      LED1_OFF;
-      //xtimer_sleep(1);
+      LED2_ON;
+      xtimer_sleep(1);
+      LED2_OFF;
+      xtimer_sleep(1);
     }
   return NULL;
 }
@@ -166,63 +163,55 @@ static void* processor_thread (void *arg)
   char buffer[UART_BUFSIZE];
 
   while (1)
+  {
+    msg_receive (&msg);
+    uart_t dev = (uart_t) msg.content.value;
+    bzero (buffer, sizeof (buffer));
+    ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
+
+    printf("processor_thread: RX '%s'\n", buffer); 
+
+    //'BASE 014038982 .'
+    if (strncmp (buffer, "BASE", 4) == 0 && strlen (buffer) >= 14)
     {
-    // Enable bandgap reference for battery
-    PMC->REGSC |= 1;
-    // Init ADC line 6
-    adc_init(ADC_LINE(6));
-    int sample = adc_sample(ADC_LINE(6), ADC_RES_10BIT);
-    PMC->REGSC &= (uint8_t) ~1;
+       buffer[14] = 0;
+       results.base = atoi (buffer + 5);
+    }
+    //'PAPP 02340 *'
+    else if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
+    {
+      buffer[10] = 0;
+      results.papp = atoi (buffer + 5);
+    }
+    //'IINST 010 X'
+    else if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
+    {
+      buffer[9] = 0;
+      results.iinst = atoi (buffer + 6);
+    }
 
-      msg_receive (&msg);
-      uart_t dev = (uart_t) msg.content.value;
+    if (results.papp >= 0 && results.iinst >= 0 && results.base >= 0)
+    {
       bzero (buffer, sizeof (buffer));
-      ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
-
-      //'BASE 014038982 .'
-      if (strncmp (buffer, "BASE", 4) == 0 && strlen (buffer) >= 14)
-	{
-	  buffer[14] = 0;
-	  results.base = atoi (buffer + 5);
-	}
-      //'PAPP 02340 *'
-     else if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
-	{
-	  buffer[10] = 0;
-	  results.papp = atoi (buffer + 5);
-	}
-      //'IINST 010 X'
-     else if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
-	{
-	  buffer[9] = 0;
-	  results.iinst = atoi (buffer + 6);
-	}
-
-      if (results.papp >= 0 && results.iinst >= 0 && results.base >= 0)
-	{
-	  bzero (buffer, sizeof (buffer));
-	  sprintf (buffer, "BATLEV:%d;PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
-       (int)(1024*1000/sample),
+      sprintf (buffer, "PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
         cur_pitinfo, results.papp,
-		cur_pitinfo, results.base, 
+        cur_pitinfo, results.base, 
         cur_pitinfo, results.iinst);
-	  printf ("=> %s \r\n", buffer);
-	  data_tx (buffer, strlen (buffer));
+      printf ("=> %s \r\n", buffer);
+      data_tx (buffer, strlen (buffer));
 
       // Notify Blinker
       msg_t msg;
       msg.content.value = 1;
       msg_send (&msg, blinker_pid);
 
-	  results.papp = 0;
-	  results.base = 0;
-	  results.iinst = 0;
+      results.papp = results.base = results.iinst = 0;
 
-	  // Stop serial port
-	  uart_poweroff (UART_DEV (1));
+      // Stop serial port
+      uart_poweroff (UART_DEV (1));
 
-	}
     }
+  }
 
   /* this should never be reached */
   return NULL;
@@ -258,8 +247,7 @@ static void rx_cb (void *arg, uint8_t data)
  * Wrapper to gnrc_netapi_set RIOT-OS 
  * 
  */
-static int
-netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
+static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
 	    size_t data_len)
 {
   int ret;
@@ -268,18 +256,13 @@ netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
     {
       printf ("!: netapi_set: Can't set option\r\n");
     }
-  else
-    {
-      printf ("#: netapi_set: Success.\r\n");
-    }
   return ret;
 }
 
 /*
  * HW Initialisation
  */ 
-static void
-prepare_all (void)
+static void prepare_all (void)
 {
 
   printf ("Start HW init\r\n");
@@ -342,16 +325,20 @@ prepare_all (void)
 
       
 
-void alarm_cb(void *arg)
-{
-    (void)arg;
-      // Notify Blinker
-      msg_t msg;
-      msg.content.value = 1;
-      msg_send (&msg, main_pid);
 
+/*
+ * Use bandgap reference and ADC to measure board's voltage
+ */
+int getBat(void){
+  // Enable bandgap reference for battery
+  PMC->REGSC |= 1;
+  // Init ADC line 6
+  adc_init(ADC_LINE(6));
+  int sample = adc_sample(ADC_LINE(6), ADC_RES_10BIT);
+  int mv = (int)(1024*1000/sample);
+  PMC->REGSC &= (uint8_t) ~1;
+  return mv;
 }
-
 
 
 int main (void)
@@ -359,10 +346,14 @@ int main (void)
 
   // INIT
   printf("*** OFlabs 802.15.4 OFLMote Sensor - Teleinfo ***\r\n");
-//  printf("*** Riot Release     %s\r\n", RIOTVERSION);
+  //  printf("*** Riot Release     %s\r\n", RIOTVERSION);
   printf("*** OFlMotes Release %s\r\n", MOTESVERSION);
   prepare_all ();
+ 
 
+  char buffer[UART_BUFSIZE];
+  sprintf (buffer, "DEV:TELEINFO;VER=1;BATLEV:%d", getBat());
+  data_tx (buffer, strlen (buffer));
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
@@ -378,13 +369,16 @@ int main (void)
   gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
   gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
 
-
-  rtt_init();
-  msg_t msg;
-  msg_t msg_queue[8];
-  msg_init_queue (msg_queue, 8);
-
   main_pid=thread_getpid();
+
+
+  // Blink 3 times at start
+  int j;
+  for (j=0;j<3; j++){
+  msg_t msg;
+  msg.content.value = 1;
+  msg_send (&msg, blinker_pid);
+  }
 
   while (1)
     {
@@ -401,6 +395,7 @@ int main (void)
         results.papp = -1;
         gpio_set(GPIO_PIN(PORT_E,2));
         uart_poweron (UART_DEV (1));
+        xtimer_sleep(5); //Wait fo 5 seconds for data process
         uart_poweroff(UART_DEV (1));
         gpio_clear(GPIO_PIN(PORT_E,2));
         printf("End read PiTInfo #1\r\n");
@@ -413,6 +408,7 @@ int main (void)
         results.papp = -1;
         gpio_set(GPIO_PIN(PORT_E,3));
         uart_poweron (UART_DEV (1));
+        xtimer_sleep(5); //Wait fo 5 seconds for data process
         uart_poweroff(UART_DEV (1));
         gpio_clear(GPIO_PIN(PORT_E,3));
         printf("End read PiTInfo #2\r\n");
@@ -421,14 +417,8 @@ int main (void)
         state = NETOPT_STATE_IDLE;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
         printf("Hibernate\r\n");
-
-        // Pause with RTT Timers
-        last += TICKS_TO_PAUSE;
-        last &= RTT_MAX_VALUE;
-        rtt_set_alarm(last, alarm_cb, 0);
-
-        // Wait for timer message
-        msg_receive (&msg);
+        xtimer_sleep (CYCLE_PAUSE_SEC);
 
     }
 }
+

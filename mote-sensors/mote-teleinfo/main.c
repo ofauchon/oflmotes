@@ -46,6 +46,7 @@
 #include "periph/adc.h"
 
 #define CYCLE_PAUSE_SEC 60
+#define READ_DELAY 10
 
 #define UART_BUFSIZE        (128U)
 
@@ -388,27 +389,27 @@ int main (void)
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
 
         // Read PitInfo #1
-        printf("Read PiTInfo #1\r\n");
+        printf("Start read PiTInfo #1\r\n");
         cur_pitinfo=1;
         results.base = -1;
         results.iinst = -1;
         results.papp = -1;
         gpio_set(GPIO_PIN(PORT_E,2));
         uart_poweron (UART_DEV (1));
-        xtimer_sleep(5); //Wait fo 5 seconds for data process
+        xtimer_sleep(READ_DELAY); //Wait fo 5 seconds for data process
         uart_poweroff(UART_DEV (1));
         gpio_clear(GPIO_PIN(PORT_E,2));
         printf("End read PiTInfo #1\r\n");
 
         // Read PitInfo #2
-        printf("Read PiTInfo #2\r\n");
+        printf("Start Read PiTInfo #2\r\n");
         cur_pitinfo=2;
         results.base = -1;
         results.iinst = -1;
         results.papp = -1;
         gpio_set(GPIO_PIN(PORT_E,3));
         uart_poweron (UART_DEV (1));
-        xtimer_sleep(5); //Wait fo 5 seconds for data process
+        xtimer_sleep(READ_DELAY); //Wait fo 5 seconds for data process
         uart_poweroff(UART_DEV (1));
         gpio_clear(GPIO_PIN(PORT_E,3));
         printf("End read PiTInfo #2\r\n");

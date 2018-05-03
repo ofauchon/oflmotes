@@ -1,2 +1,3 @@
 ./mote-gateway/hard/bin/
 mote-gateway/soft/start.sh
+**/bin/*

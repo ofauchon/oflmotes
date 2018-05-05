@@ -50,6 +50,8 @@
 
 #define UART_BUFSIZE        (128U)
 
+static uint8_t loop_cntr; 
+
 // Node ID must be passed at compilation time
 // Todo Use EEPROM for NodeID definition
 #ifndef NODE_ID
@@ -350,11 +352,9 @@ int main (void)
   //  printf("*** Riot Release     %s\r\n", RIOTVERSION);
   printf("*** OFlMotes Release %s\r\n", MOTESVERSION);
   prepare_all ();
- 
 
-  char buffer[UART_BUFSIZE];
-  sprintf (buffer, "DEV:TELEINFO;VER=1;BATLEV:%d", getBat());
-  data_tx (buffer, strlen (buffer));
+  loop_cntr=0; 
+ 
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
@@ -381,12 +381,19 @@ int main (void)
   msg_send (&msg, blinker_pid);
   }
 
+  char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
         // Enable Radio for TX
         netopt_state_t state;
         state = NETOPT_STATE_TX;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+
+        // Periodic misc info TX (battery level ...)
+        if ((loop_cntr % 5)==0){
+            sprintf (buffer, "DEVICE:TELEINFO;VER=1;BATLEV:%d", getBat());
+            data_tx (buffer, strlen (buffer));
+        }
 
         // Read PitInfo #1
         printf("Start read PiTInfo #1\r\n");
@@ -419,6 +426,7 @@ int main (void)
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
         printf("Hibernate\r\n");
         xtimer_sleep (CYCLE_PAUSE_SEC);
+        loop_cntr++; 
 
     }
 }

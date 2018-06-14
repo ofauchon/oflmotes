@@ -4478,7 +4478,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 <parts>
 <part name="PORT_D" library="SparkFun-Connectors" deviceset="CONN_08" device="&quot;"/>
 <part name="PORT_C" library="SparkFun-Connectors" deviceset="CONN_04" device=""/>
-<part name="U$1" library="oflabs-phytec" deviceset="PHYWAVE_KW2XD" device=""/>
+<part name="MODULE1" library="oflabs-phytec" deviceset="PHYWAVE_KW2XD" device=""/>
 <part name="FRAME1" library="SparkFun-Aesthetics" deviceset="FRAME-A4L" device="">
 <attribute name="CNAME" value="OFLMote KW2xD Dev. Board "/>
 <attribute name="CREVISION" value="v1.0"/>
@@ -4500,7 +4500,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 <instances>
 <instance part="PORT_D" gate="G$1" x="246.38" y="160.02" rot="MR0"/>
 <instance part="PORT_C" gate="G$1" x="246.38" y="109.22" rot="MR0"/>
-<instance part="U$1" gate="G$1" x="175.26" y="81.28"/>
+<instance part="MODULE1" gate="G$1" x="175.26" y="81.28"/>
 <instance part="FRAME1" gate="G$1" x="-7.62" y="0">
 <attribute name="CNAME" x="-7.62" y="0" size="1.778" layer="96" display="off"/>
 <attribute name="CREVISION" x="-7.62" y="0" size="1.778" layer="96" display="off"/>
@@ -4523,7 +4523,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 <nets>
 <net name="VCC" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="VCC"/>
+<pinref part="MODULE1" gate="G$1" pin="VCC"/>
 <wire x1="68.58" y1="50.8" x2="55.88" y2="50.8" width="0.1524" layer="91"/>
 <label x="55.88" y="50.8" size="1.778" layer="95"/>
 </segment>
@@ -4545,7 +4545,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="NRST" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="N_RST"/>
+<pinref part="MODULE1" gate="G$1" pin="N_RST"/>
 <wire x1="68.58" y1="40.64" x2="55.88" y2="40.64" width="0.1524" layer="91"/>
 <label x="55.88" y="40.64" size="1.778" layer="95"/>
 </segment>
@@ -4569,21 +4569,21 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="GND" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="GND@0"/>
+<pinref part="MODULE1" gate="G$1" pin="GND@0"/>
 <wire x1="162.56" y1="45.72" x2="167.64" y2="45.72" width="0.1524" layer="91"/>
 <wire x1="167.64" y1="45.72" x2="167.64" y2="40.64" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="GND@4"/>
+<pinref part="MODULE1" gate="G$1" pin="GND@4"/>
 <wire x1="167.64" y1="40.64" x2="167.64" y2="35.56" width="0.1524" layer="91"/>
 <wire x1="167.64" y1="35.56" x2="167.64" y2="30.48" width="0.1524" layer="91"/>
 <wire x1="167.64" y1="30.48" x2="167.64" y2="25.4" width="0.1524" layer="91"/>
 <wire x1="167.64" y1="25.4" x2="162.56" y2="25.4" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="GND@1"/>
+<pinref part="MODULE1" gate="G$1" pin="GND@1"/>
 <wire x1="162.56" y1="40.64" x2="167.64" y2="40.64" width="0.1524" layer="91"/>
 <junction x="167.64" y="40.64"/>
-<pinref part="U$1" gate="G$1" pin="GND@2"/>
+<pinref part="MODULE1" gate="G$1" pin="GND@2"/>
 <wire x1="162.56" y1="35.56" x2="167.64" y2="35.56" width="0.1524" layer="91"/>
 <junction x="167.64" y="35.56"/>
-<pinref part="U$1" gate="G$1" pin="GND@3"/>
+<pinref part="MODULE1" gate="G$1" pin="GND@3"/>
 <wire x1="162.56" y1="30.48" x2="167.64" y2="30.48" width="0.1524" layer="91"/>
 <junction x="167.64" y="30.48"/>
 <wire x1="167.64" y1="35.56" x2="177.8" y2="35.56" width="0.1524" layer="91"/>
@@ -4615,7 +4615,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD7" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD7"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD7"/>
 <wire x1="162.56" y1="119.38" x2="177.8" y2="119.38" width="0.1524" layer="91"/>
 <label x="177.8" y="119.38" size="1.778" layer="95"/>
 </segment>
@@ -4627,7 +4627,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD6" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD6"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD6"/>
 <wire x1="162.56" y1="114.3" x2="177.8" y2="114.3" width="0.1524" layer="91"/>
 <label x="177.8" y="114.3" size="1.778" layer="95"/>
 </segment>
@@ -4639,7 +4639,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD5" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD5"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD5"/>
 <wire x1="162.56" y1="109.22" x2="177.8" y2="109.22" width="0.1524" layer="91"/>
 <label x="177.8" y="109.22" size="1.778" layer="95"/>
 </segment>
@@ -4651,7 +4651,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD4" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD4"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD4"/>
 <wire x1="162.56" y1="104.14" x2="177.8" y2="104.14" width="0.1524" layer="91"/>
 <label x="177.8" y="104.14" size="1.778" layer="95"/>
 </segment>
@@ -4663,7 +4663,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD3" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD3"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD3"/>
 <wire x1="162.56" y1="99.06" x2="177.8" y2="99.06" width="0.1524" layer="91"/>
 <label x="177.8" y="99.06" size="1.778" layer="95"/>
 </segment>
@@ -4675,7 +4675,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD2" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD2"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD2"/>
 <wire x1="162.56" y1="93.98" x2="177.8" y2="93.98" width="0.1524" layer="91"/>
 <label x="177.8" y="93.98" size="1.778" layer="95"/>
 </segment>
@@ -4687,7 +4687,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTD1" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTD1"/>
+<pinref part="MODULE1" gate="G$1" pin="PTD1"/>
 <wire x1="162.56" y1="88.9" x2="177.8" y2="88.9" width="0.1524" layer="91"/>
 <label x="177.8" y="88.9" size="1.778" layer="95"/>
 </segment>
@@ -4706,7 +4706,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTC4" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTC4"/>
+<pinref part="MODULE1" gate="G$1" pin="PTC4"/>
 <wire x1="162.56" y1="58.42" x2="177.8" y2="58.42" width="0.1524" layer="91"/>
 <label x="177.8" y="58.42" size="1.778" layer="95"/>
 </segment>
@@ -4718,7 +4718,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTC5" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTC5"/>
+<pinref part="MODULE1" gate="G$1" pin="PTC5"/>
 <wire x1="162.56" y1="63.5" x2="177.8" y2="63.5" width="0.1524" layer="91"/>
 <label x="177.8" y="63.5" size="1.778" layer="95"/>
 </segment>
@@ -4730,7 +4730,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTC6" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTC6"/>
+<pinref part="MODULE1" gate="G$1" pin="PTC6"/>
 <wire x1="162.56" y1="68.58" x2="177.8" y2="68.58" width="0.1524" layer="91"/>
 <label x="177.8" y="68.58" size="1.778" layer="95"/>
 </segment>
@@ -4742,7 +4742,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTC7" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTC7"/>
+<pinref part="MODULE1" gate="G$1" pin="PTC7"/>
 <wire x1="162.56" y1="73.66" x2="177.8" y2="73.66" width="0.1524" layer="91"/>
 <label x="177.8" y="73.66" size="1.778" layer="95"/>
 </segment>
@@ -4754,7 +4754,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE0" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE0"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE0"/>
 <wire x1="137.16" y1="139.7" x2="137.16" y2="147.32" width="0.1524" layer="91"/>
 <label x="137.16" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4772,7 +4772,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE1" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE1"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE1"/>
 <wire x1="132.08" y1="139.7" x2="132.08" y2="147.32" width="0.1524" layer="91"/>
 <label x="132.08" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4784,7 +4784,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE2" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE2"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE2"/>
 <wire x1="127" y1="139.7" x2="127" y2="147.32" width="0.1524" layer="91"/>
 <label x="127" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4796,7 +4796,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE3" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE3"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE3"/>
 <wire x1="121.92" y1="139.7" x2="121.92" y2="147.32" width="0.1524" layer="91"/>
 <label x="121.92" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4808,7 +4808,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE4" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE4"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE4"/>
 <wire x1="116.84" y1="139.7" x2="116.84" y2="147.32" width="0.1524" layer="91"/>
 <label x="116.84" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4820,7 +4820,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE16" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE16"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE16"/>
 <wire x1="111.76" y1="139.7" x2="111.76" y2="147.32" width="0.1524" layer="91"/>
 <label x="111.76" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4832,7 +4832,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE17" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE17"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE17"/>
 <wire x1="106.68" y1="139.7" x2="106.68" y2="147.32" width="0.1524" layer="91"/>
 <label x="106.68" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4844,7 +4844,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE18" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE18"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE18"/>
 <wire x1="101.6" y1="139.7" x2="101.6" y2="147.32" width="0.1524" layer="91"/>
 <label x="101.6" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4856,7 +4856,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTE19" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTE19"/>
+<pinref part="MODULE1" gate="G$1" pin="PTE19"/>
 <wire x1="96.52" y1="139.7" x2="96.52" y2="147.32" width="0.1524" layer="91"/>
 <label x="96.52" y="147.32" size="1.778" layer="95" rot="R90"/>
 </segment>
@@ -4868,7 +4868,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA1" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA1"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA1"/>
 <wire x1="68.58" y1="109.22" x2="55.88" y2="109.22" width="0.1524" layer="91"/>
 <label x="55.88" y="109.22" size="1.778" layer="95"/>
 </segment>
@@ -4880,7 +4880,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA2" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA2"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA2"/>
 <wire x1="68.58" y1="104.14" x2="55.88" y2="104.14" width="0.1524" layer="91"/>
 <label x="55.88" y="104.14" size="1.778" layer="95"/>
 </segment>
@@ -4892,7 +4892,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA4" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA4"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA4"/>
 <wire x1="68.58" y1="93.98" x2="55.88" y2="93.98" width="0.1524" layer="91"/>
 <label x="55.88" y="93.98" size="1.778" layer="95"/>
 </segment>
@@ -4904,7 +4904,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA18" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA18"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA18"/>
 <wire x1="68.58" y1="88.9" x2="55.88" y2="88.9" width="0.1524" layer="91"/>
 <label x="55.88" y="88.9" size="1.778" layer="95"/>
 </segment>
@@ -4916,7 +4916,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA19" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA19"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA19"/>
 <wire x1="68.58" y1="83.82" x2="55.88" y2="83.82" width="0.1524" layer="91"/>
 <label x="55.88" y="83.82" size="1.778" layer="95"/>
 </segment>
@@ -4928,7 +4928,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA3_SWDIO" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA3_JTAGTMS_SWDDIO)"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA3_JTAGTMS_SWDDIO)"/>
 <wire x1="68.58" y1="99.06" x2="55.88" y2="99.06" width="0.1524" layer="91"/>
 <label x="55.88" y="99.06" size="1.778" layer="95"/>
 </segment>
@@ -4945,7 +4945,7 @@ Source: http://www.osram.convergy.de/ ... lb_r99a.pdf</description>
 </net>
 <net name="PTA0_SWDCLK" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="PTA0_JTAGTCLK_SWDCLK"/>
+<pinref part="MODULE1" gate="G$1" pin="PTA0_JTAGTCLK_SWDCLK"/>
 <wire x1="68.58" y1="114.3" x2="55.88" y2="114.3" width="0.1524" layer="91"/>
 <label x="55.88" y="114.3" size="1.778" layer="95"/>
 </segment>

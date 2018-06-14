@@ -141,9 +141,9 @@ static void* blinker_thread (void *arg)
     {
       // 
       msg_receive (&msg);
-      LED2_ON;
+      LED1_ON;
       xtimer_sleep(1);
-      LED2_OFF;
+      LED1_OFF;
       xtimer_sleep(1);
     }
   return NULL;
@@ -422,7 +422,7 @@ int main (void)
         printf("End read PiTInfo #2\r\n");
 
         // Powersave (Disable Radio)
-        state = NETOPT_STATE_IDLE;
+        state = NETOPT_STATE_OFF;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
         printf("Hibernate\r\n");
         xtimer_sleep (CYCLE_PAUSE_SEC);

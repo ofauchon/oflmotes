@@ -1,4 +1,4 @@
-CFLAGS := $(CFLAGS) -DNODE_ID=0x99
+CFLAGS := $(CFLAGS) -DNODE_ID=0x98
 
 # name of your application
 APPLICATION = mote-gateway
@@ -14,7 +14,7 @@ BOARD ?= pba-d-01-kw2x
 
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE ?= $(CURDIR)/../../../RIOT
+RIOTBASE ?= $(CURDIR)/../../../RIOT.ofauchon
 
 # Uncomment these lines if you want to use platform support from external
 # repositories:

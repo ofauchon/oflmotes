@@ -10,7 +10,8 @@
 
 v1.0: Initial version. 
 
-![v1.0 board picture](board_v1.0.jpg =400x)
+<img src="board_v1.0.jpg" alt="v1.0 board picture" width="400px"/>
+
 
 
 # Next steps

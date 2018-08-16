@@ -17,6 +17,10 @@ v1.0: Initial version.
 
 # Next steps
 
+
+- Add 100nF condensator on reset switch
+- Add 10k pullup on SWD_DIO
+
 - Add specific JTAG header
 - Increase track interspace
 - Add power-on led

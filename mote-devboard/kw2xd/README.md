@@ -10,7 +10,7 @@
 
 v1.0: Initial version. 
 
-![v1.0 board picture](https://github.com/ofauchon/oflmotes/blob/master/mote-devboard/kw2xd/board_v1.0.jpg)
+![v1.0 board picture](board_v1.0.jpg =400x)
 
 
 # Next steps

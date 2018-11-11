@@ -140,7 +140,9 @@ static const adc_conf_t adc_config[] = {
     [ 2] = { .dev = ADC0, .pin = GPIO_PIN(PORT_D, 7), .chan = 22, .avg = ADC_AVG_MAX },
     [ 3] = { .dev = ADC0, .pin = GPIO_PIN(PORT_D, 5), .chan =  6, .avg = ADC_AVG_MAX },
     [ 4] = { .dev = ADC0, .pin = GPIO_PIN(PORT_E, 0), .chan = 10, .avg = ADC_AVG_MAX },
-    [ 5] = { .dev = ADC0, .pin = GPIO_PIN(PORT_E, 1), .chan = 11, .avg = ADC_AVG_MAX }
+    [ 5] = { .dev = ADC0, .pin = GPIO_PIN(PORT_E, 1), .chan = 11, .avg = ADC_AVG_MAX },
+    [ 6] = { .dev = ADC0, .pin = GPIO_UNDEF         , .chan = 27, .avg = ADC_AVG_MAX }
+
 };
 
 #define ADC_NUMOF           (sizeof(adc_config) / sizeof(adc_config[0]))

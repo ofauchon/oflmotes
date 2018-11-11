@@ -15,15 +15,16 @@ v1.0: Initial version.
 
 
 
-# Next steps
+# Version #2 enhancements
 
 
-- Add 100nF condensator on reset switch
-- Add 10k pullup on SWD_DIO
-
-- Add specific JTAG header
-- Increase track interspace
-- Add power-on led
+- Add 100nF condensator on reset switch for debounce
+- Add specific debug header (JTAG/SWD/SWO)
 - Replace reset switch with a smaler one
 - Reduce board size 
 
+- Increase track width and interspace
+- Add orange power-on led
+- Add Red ddddLed
+- Add two switchs for input
+#- Route Green Led to PTE19 instead of PTE0 (Used for I2C)

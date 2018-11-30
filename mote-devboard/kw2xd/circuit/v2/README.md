@@ -6,7 +6,7 @@ v2.1
   - Add Restrict / Keepout to avoid tracks under Phynode module
 
 
-<script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="https://raw.githubusercontent.com/ofauchon/eagle_viewer/master/src/index.js"></script>
 <div id="topBar">
     <form>
         <input type="file" onChange="loadFile(this.files[0])">

@@ -1,13 +1,14 @@
 # name of your application
 APPLICATION = radio
-BOARD = oflmote-dev
+BOARD ?= oflmote-dev
 
 PORT = /dev/ttyUSB1
 BAUD = 115200
 TERMPROG=picocom
 TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 
-RIOTBASE ?= /home/olivier/dev/RIOT.original
+RIOTBASE ?= /home/olivier/dev/RIOT.gebart
+#RIOTBASE ?= /home/olivier/dev/RIOT.original
 
 #RIOTCPU ?= $(CURDIR)/../../RIOT/thirdparty_cpu
 RIOTBOARD ?= $(CURDIR)/../boards
@@ -20,6 +21,8 @@ USEMODULE += auto_init_gnrc_netif
 USEMODULE += netstats_l2 
 USEMODULE += periph_uart
 USEMODULE += gnrc_mac 
+USEMODULE += periph_llwu
+USEMODULE += xtimer
 
 FEATURES_REQUIRED = periph_uart
 FEATURES_REQUIRED += periph_rtt
@@ -42,11 +45,18 @@ MOTES_BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
 BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
 CFLAGS += -DMOTESVERSION=\"git.$(MOTES_BUILD_VERSION).$(BUILD_DATE)\"
 
+#OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
+OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 
+
+
 include $(RIOTBASE)/Makefile.include
 
 swo:   
 	openocd  -f 'interface/jlink.cfg' -c 'transport select swd' -f 'target/kx.cfg' -c 'tpiu config internal /tmp/traceswo.log uart off 48000000 100000'
+trace:
+	 ./swo-tracer -t  /tmp/traceswo.log
+
 
 picocom:   
-	picocom /dev/ttyUSB0 --baud 115200
+	picocom /dev/ttyUSB0 --baud 115200  --imap crcrlf,lfcrlf
 

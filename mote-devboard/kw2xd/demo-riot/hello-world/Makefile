@@ -5,7 +5,7 @@ APPLICATION = test-led
 BOARD = oflmote-dev
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE= /home/olivier/dev/RIOT.original
+RIOTBASE= /home/olivier/dev/RIOT.gebart
 RIOTBOARD=../boards
 
 # Comment this out to disable code in RIOT that does safety checking
@@ -15,5 +15,10 @@ DEVELHELP ?= 1
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
+
+
+OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 
+#OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
+#OPENOCD_EXTRA_INIT ?= "-d 3"
 
 include $(RIOTBASE)/Makefile.include

@@ -5072,13 +5072,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="0" y="66.04" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="PTA1" class="0">
-<segment>
-<pinref part="PORT_A" gate="G$1" pin="2"/>
-<wire x1="198.12" y1="149.86" x2="182.88" y2="149.86" width="0.1524" layer="91"/>
-<label x="180.34" y="149.86" size="1.778" layer="95"/>
-</segment>
-</net>
 <net name="PTA4" class="0">
 <segment>
 <pinref part="MODULE1" gate="G$1" pin="PTA4"/>
@@ -5190,6 +5183,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="J1" gate="G$1" pin="NC/TDI"/>
 <wire x1="241.3" y1="50.8" x2="251.46" y2="50.8" width="0.1524" layer="91"/>
 <label x="248.92" y="50.8" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="PORT_A" gate="G$1" pin="2"/>
+<wire x1="198.12" y1="149.86" x2="182.88" y2="149.86" width="0.1524" layer="91"/>
+<label x="180.34" y="149.86" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$3" class="0">

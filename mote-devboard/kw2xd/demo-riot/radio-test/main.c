@@ -48,17 +48,25 @@
 #include "bmx280_params.h"
 #include "bmx280.h"
 
+#define SWO 0
 
+#if SWO
+#include "swo.h"
+char buflog[255];
+  #define zprintf(args...) snprintf(buflog,sizeof(buflog),args); SWO_PrintString(buflog);
+#else
+#  define zprintf(args...) printf(args);
+#endif
 
-#define CYCLE_PAUSE_SEC 60
+#define CYCLE_PAUSE_SEC 10
 #define READ_DELAY 10
 #define UART_BUFSIZE        (128U)
-
 
 #ifndef NODE_ID
 #warn 'NODE_ID is undefined, defaulting to 0xFA'
 #define NODE_ID 0xFA
 #endif
+
 
 
 /* Threads Stuff */
@@ -97,14 +105,12 @@ static void sensor_measure(void){
 }
 
 
-
-
 /*
  * Send 802.16.4 frame 
  */
 static int data_tx (char *data, char data_sz)
 {
-  printf("data_tx: %s\r\n", data);
+  zprintf("data_tx: %s\r\n", data);
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
@@ -151,9 +157,9 @@ static void* blinker_thread (void *arg)
     {
       // 
       msg_receive (&msg);
-      LED1_ON;
+      LED0_ON;
       xtimer_sleep(1);
-      LED1_OFF;
+      LED0_OFF;
       xtimer_sleep(1);
     }
   return NULL;
@@ -171,7 +177,7 @@ static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *d
   ret = gnrc_netapi_set (pid, opt, context, data, data_len);
   if (ret < 0)
     {
-      printf ("!: netapi_set: Can't set option\r\n");
+      zprintf ("!: netapi_set: Can't set option\r\n");
     }
   return ret;
 }
@@ -183,7 +189,7 @@ static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *d
  */ 
 static void prepare_all (void)
 {
-  printf ("Start HW init\r\n");
+  zprintf ("Start HW init\r\n");
 
   gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
   gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
@@ -198,37 +204,37 @@ static void prepare_all (void)
   iff = gnrc_netif_iter (iff);
   if (iff == NULL)
     {
-      printf ("ERROR : NO INTERFACE \r\n");
+      zprintf ("ERROR : NO INTERFACE \r\n");
       return;
     }
   ifpid = iff->pid;
 
-  printf ("Switch to chan 11\r\n");
+  zprintf ("Switch to chan 11\r\n");
   int16_t val = 11;
   netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val,
 	      sizeof (int16_t));
 
   // Set PAN to 0xF00D
-  printf ("Set pan to 0xF00D\r\n");
+  zprintf ("Set pan to 0xF00D\r\n");
   val = 0xF00D;
   netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
 
   // Set address
-  printf ("Set addr to 00:...:99\r\n");
+  zprintf ("Set addr to 00:...:99\r\n");
   char src[24];
-  sprintf (src, "00:00:00:00:00:00:00:%02x", NODE_ID);
+  sprintf(src, "00:00:00:00:00:00:00:%02x", NODE_ID);
 
   size_t addr_len = gnrc_netif_addr_from_str (src, out);
   if (addr_len == 0)
     {
-      printf ("!!! Unable to parse address !!!\r\n");
+      zprintf ("!!! Unable to parse address !!!\r\n");
     }
   else
     {
       netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
     }
 
-  printf ("Radio Init Done\r\n");
+  zprintf ("Radio Init Done\r\n");
 
 
 
@@ -236,20 +242,17 @@ static void prepare_all (void)
   // Sensor Init
   int result = bmx280_init(&bmx_dev, &bmx280_params[0]);
   if (result == -1) {
-      printf("[Error] The given i2c is not enabled\r\n");
+      zprintf("[Error] The given i2c is not enabled\r\n");
   }
 
   if (result == -2) {
-      printf("[Error] The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
+      zprintf("[Error] The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
   }
 
-  printf ("I2C Init Done\r\n");
+  zprintf ("I2C Init Done\r\n");
 
 
 }
-
-      
-
 
 /*
  * Use bandgap reference and ADC to measure board's voltage
@@ -268,11 +271,16 @@ int getBat(void){
 
 int main (void)
 {
+    LED0_ON; 
+
+#if SWO
+    SWO_Init(0x01,  48000000);
+#endif
 
   // INIT
-  printf("\r\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\r\n");
-  printf("*** OFlMotes Release %s\r\n", MOTESVERSION);
-  prepare_all ();
+  zprintf("\r\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\r\n");
+  zprintf("*** OFlMotes Release %s\r\n", MOTESVERSION);
+  prepare_all();
 
   loop_cntr=0; 
 
@@ -291,17 +299,28 @@ int main (void)
   msg_send (&msg, blinker_pid);
   }
 
+ // uart_poweroff(UART_DEV(0));
+
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
+        uart_poweron(UART_DEV(0));
+        zprintf("Resume for Hibernate\r\n");
+
+        // Blink
+        msg_t msg;
+        msg.content.value = 1;
+        msg_send (&msg, blinker_pid);
+
+        //uart_poweron(UART_DEV(0));
         // Enable Radio for TX
         netopt_state_t state;
         state = NETOPT_STATE_TX;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
 
-
+        // Measure sensor and transmit
         sensor_measure();
-        sprintf (buffer, "DEVICE:DEV;VER=01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
+        sprintf(buffer, "DEVICE:DEV;VER=01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
           getBat(),
           (temperature<0) ? '-' : '+',
           temperature/100,
@@ -311,25 +330,13 @@ int main (void)
           humidity%100);
         data_tx (buffer, strlen (buffer));
 
-/*
-        printf("Temperature [°C]:%c%d.%d\n"
-               "Pressure [Pa]: %lu\n"
-               "Humidity [%%rH]: %u.%02u\n"
-               "\n+-------------------------------------+\n",
-               (negative) ? '-' : ' ',
-               temperature / 100, (temperature % 100) / 10,
-               (unsigned long)pressure,
-               (unsigned int)(humidity / 100), (unsigned int)(humidity % 100)
-               );
-*/
-
-
         // Powersave (Disable Radio)
-        //state = NETOPT_STATE_OFF;
-        //netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-        //printf("Hibernate\r\n");
-        LED0_TOGGLE; 
-        xtimer_sleep (CYCLE_PAUSE_SEC);
+       // state = NETOPT_STATE_OFF;
+       // netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        zprintf("Hibernate\r\n");
+        uart_poweroff(UART_DEV(0));
+
+        xtimer_sleep(CYCLE_PAUSE_SEC);
         loop_cntr++; 
 
     }

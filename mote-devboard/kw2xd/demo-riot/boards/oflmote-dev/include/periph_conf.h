@@ -71,7 +71,7 @@ static const clock_config_t clock_config = {
  * @{
  */
 #define PIT_NUMOF               (2U)
-#define PIT_CONFIG {                 \
+#define PIT_CONFIG { \
         {                            \
             .prescaler_ch = 0,       \
             .count_ch = 1,           \
@@ -81,8 +81,18 @@ static const clock_config_t clock_config = {
             .count_ch = 3,           \
         },                           \
     }
-#define LPTMR_NUMOF             (0U)
-#define LPTMR_CONFIG {}
+
+#define LPTMR_NUMOF             (1U)
+#define LPTMR_CONFIG { \
+        { \
+            .dev = LPTMR0, \
+            .base_freq = 32768u, \
+            .llwu = LLWU_WAKEUP_MODULE_LPTMR0, \
+            .src = 2, \
+            .irqn = LPTMR0_IRQn, \
+        }, \
+    }
+
 #define TIMER_NUMOF             ((PIT_NUMOF) + (LPTMR_NUMOF))
 
 #define PIT_BASECLOCK           (CLOCK_BUSCLOCK)
@@ -108,6 +118,7 @@ static const uart_conf_t uart_config[] = {
         .scgc_bit = SIM_SCGC4_UART2_SHIFT,
         .mode   = UART_MODE_8N1,
         .type   = KINETIS_UART,
+        .llwu_rx = LLWU_WAKEUP_PIN_UNDEF,
     },
     {
         .dev    = UART0,
@@ -121,6 +132,7 @@ static const uart_conf_t uart_config[] = {
         .scgc_bit = SIM_SCGC4_UART0_SHIFT,
         .mode   = UART_MODE_8N1,
         .type   = KINETIS_UART,
+        .llwu_rx = LLWU_WAKEUP_PIN_UNDEF,
     }
 };
 
@@ -141,7 +153,7 @@ static const adc_conf_t adc_config[] = {
     [ 3] = { .dev = ADC0, .pin = GPIO_PIN(PORT_D, 5), .chan =  6, .avg = ADC_AVG_MAX },
     [ 4] = { .dev = ADC0, .pin = GPIO_PIN(PORT_E, 0), .chan = 10, .avg = ADC_AVG_MAX },
     [ 5] = { .dev = ADC0, .pin = GPIO_PIN(PORT_E, 1), .chan = 11, .avg = ADC_AVG_MAX },
-    [ 6] = { .dev = ADC0, .pin = GPIO_UNDEF         , .chan = 27, .avg = ADC_AVG_MAX }
+    [ 6] = { .dev = ADC0, .pin = GPIO_UNDEF         , .chan = 27 }
 
 };
 

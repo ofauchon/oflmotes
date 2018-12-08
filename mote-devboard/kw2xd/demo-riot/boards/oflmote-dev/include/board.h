@@ -29,21 +29,38 @@ extern "C"
 {
 #endif
 
+
+
+/**
+ * @name    xtimer configuration
+ * @{
+ */
+/* LPTMR xtimer configuration */
+#define XTIMER_DEV                  (TIMER_LPTMR_DEV(0))
+#define XTIMER_CHAN                 (0)
+/* LPTMR is 16 bits wide and runs at 32768 Hz (clocked by the RTC) */
+#define XTIMER_WIDTH                (16)
+#define XTIMER_BACKOFF              (5)
+#define XTIMER_ISR_BACKOFF          (5)
+#define XTIMER_OVERHEAD             (4)
+#define XTIMER_HZ                   (32768ul)
+
+
 /**
  * @name    LED pin definitions and handlers
  * @{
  */
-#define LED0_PIN            GPIO_PIN(PORT_E, 0)
+#define LED0_PIN            GPIO_PIN(PORT_C, 4)
 #define LED1_PIN            GPIO_PIN(PORT_D, 4)
 #define LED2_PIN            GPIO_PIN(PORT_A, 4)
 
-#define LED0_MASK           (1 << 0) 
+#define LED0_MASK           (1 << 4)
 #define LED1_MASK           (1 << 4)
 #define LED2_MASK           (1 << 4)
 
-#define LED0_ON            (GPIOE->PCOR = LED0_MASK)
-#define LED0_OFF           (GPIOE->PSOR = LED0_MASK)
-#define LED0_TOGGLE        (GPIOE->PTOR = LED0_MASK)
+#define LED0_ON            (GPIOC->PSOR = LED0_MASK)
+#define LED0_OFF           (GPIOC->PCOR = LED0_MASK)
+#define LED0_TOGGLE        (GPIOC->PTOR = LED0_MASK)
 
 #define LED1_ON            (GPIOD->PCOR = LED1_MASK)
 #define LED1_OFF           (GPIOD->PSOR = LED1_MASK)

@@ -1,3 +1,14 @@
 ./mote-gateway/hard/bin/
 mote-gateway/soft/start.sh
 **/bin/*
+mote-devboard/kw2xd/circuit/*/*.[sb]#*
+mote-devboard/kw2xd/circuit/*/*.gpi
+mote-devboard/kw2xd/circuit/*/*.dri
+mote-devboard/kw2xd/circuit/*/*.cmp
+mote-devboard/kw2xd/circuit/*/*.plc
+mote-devboard/kw2xd/circuit/*/*.stc
+mote-devboard/kw2xd/circuit/*/*.pro
+mote-devboard/kw2xd/circuit/*/*.$$$
+mote-devboard/kw2xd/circuit/*/*.whl
+mote-devboard/kw2xd/circuit/*/*.sol
+mote-devboard/kw2xd/circuit/*/*.sts

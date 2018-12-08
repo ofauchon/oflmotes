@@ -23,13 +23,18 @@
 
 #include "board.h"
 #include "periph_conf.h"
+#include "periph/gpio.h"
+
 
 
 int main(void)
 {
 
-    // Turn led on (PE0)
-    GPIOE->PSOR = 0x1 ;
+
+
+#define LED_PIN GPIO_PIN(PORT_C, 4)
+    gpio_init(LED_PIN, GPIO_OUT);
+    gpio_set(LED_PIN);
 
     puts("Hello World!");
 

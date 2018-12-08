@@ -45,57 +45,72 @@
 #include "periph/hwrng.h"
 #include "periph/adc.h"
 
-#define CYCLE_PAUSE_SEC 60
-#define READ_DELAY 10
+#include "bmx280_params.h"
+#include "bmx280.h"
 
+#define SWO 0
+
+#if SWO
+#include "swo.h"
+char buflog[255];
+  #define zprintf(args...) snprintf(buflog,sizeof(buflog),args); SWO_PrintString(buflog);
+#else
+#  define zprintf(args...) printf(args);
+#endif
+
+#define CYCLE_PAUSE_SEC 10
+#define READ_DELAY 10
 #define UART_BUFSIZE        (128U)
 
-static uint8_t loop_cntr; 
-
-// Node ID must be passed at compilation time
-// Todo Use EEPROM for NodeID definition
 #ifndef NODE_ID
 #warn 'NODE_ID is undefined, defaulting to 0xFA'
 #define NODE_ID 0xFA
 #endif
 
-typedef struct
-{
-  char rx_mem[UART_BUFSIZE];
-  ringbuffer_t rx_buf;
-} uart_ctx_t;
-static uart_ctx_t ctx[UART_NUMOF];
 
-typedef struct
-{
-  int16_t papp;
-  int16_t iinst;
-  int32_t base;
-} results_t;
-static results_t results;
 
-static kernel_pid_t ifpid = 0;
-static uint8_t cur_pitinfo = 0 ; 
-
-/* Blink led thread */
+/* Threads Stuff */
 #define BLINKER_PRIO        (THREAD_PRIORITY_MAIN - 2)
 static kernel_pid_t blinker_pid;
 static char blinker_stack[THREAD_STACKSIZE_MAIN];
-
-/* Processor thread */
-#define PROCESSOR_PRIO        (THREAD_PRIORITY_MAIN - 1)
-static kernel_pid_t processor_pid;
-static char processor_stack[THREAD_STACKSIZE_MAIN];
-
-/* Main thread */
 static kernel_pid_t main_pid;
+static kernel_pid_t ifpid = 0;
+
+
+/* Sensor variables */
+static bmx280_t bmx_dev;
+static int16_t temperature;
+static uint32_t pressure;
+static uint16_t humidity;
+
+static uint8_t loop_cntr; 
+
+/*
+ * 
+ */
+static void sensor_measure(void){
+          /* Get temperature in centi degrees Celsius */
+        temperature = bmx280_read_temperature(&bmx_dev);
+        bool negative = (temperature < 0);
+        if (negative) {
+            temperature = -temperature;
+        }
+
+        /* Get pressure in Pa */
+        pressure = bmx280_read_pressure(&bmx_dev);
+
+        /* Get pressure in %rH */
+        humidity = bme280_read_humidity(&bmx_dev);
+
+}
+
 
 /*
  * Send 802.16.4 frame 
  */
 static int data_tx (char *data, char data_sz)
 {
-  printf("data_tx: %s\r\n", data);
+  zprintf("data_tx: %s\r\n", data);
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
@@ -142,114 +157,18 @@ static void* blinker_thread (void *arg)
     {
       // 
       msg_receive (&msg);
-      LED1_ON;
+      LED0_ON;
       xtimer_sleep(1);
-      LED1_OFF;
+      LED0_OFF;
       xtimer_sleep(1);
     }
   return NULL;
 }
 
-
-/*
- * Processor Thread 
- * 
- * Loop and process messages from UART.
- * Append new uart char to a ringbuffer
- * Send message to 
- */
-static void* processor_thread (void *arg)
-{
-  (void) arg;
-  msg_t msg;
-  msg_t msg_queue[8];
-  msg_init_queue (msg_queue, 8);
-  char buffer[UART_BUFSIZE];
-
-  while (1)
-  {
-    msg_receive (&msg);
-    uart_t dev = (uart_t) msg.content.value;
-    bzero (buffer, sizeof (buffer));
-    ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
-
-    printf("processor_thread: RX '%s'\n", buffer); 
-
-    //'BASE 014038982 .'
-    if (strncmp (buffer, "BASE", 4) == 0 && strlen (buffer) >= 14)
-    {
-       buffer[14] = 0;
-       results.base = atoi (buffer + 5);
-    }
-    //'PAPP 02340 *'
-    else if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
-    {
-      buffer[10] = 0;
-      results.papp = atoi (buffer + 5);
-    }
-    //'IINST 010 X'
-    else if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
-    {
-      buffer[9] = 0;
-      results.iinst = atoi (buffer + 6);
-    }
-
-    if (results.papp >= 0 && results.iinst >= 0 && results.base >= 0)
-    {
-      bzero (buffer, sizeof (buffer));
-      sprintf (buffer, "PAPP%d:%i;BASE%d:%li;IINST%d:%i", 
-        cur_pitinfo, results.papp,
-        cur_pitinfo, results.base, 
-        cur_pitinfo, results.iinst);
-      printf ("=> %s \r\n", buffer);
-      data_tx (buffer, strlen (buffer));
-
-      // Notify Blinker
-      msg_t msg;
-      msg.content.value = 1;
-      msg_send (&msg, blinker_pid);
-
-      results.papp = results.base = results.iinst = 0;
-
-      // Stop serial port
-      uart_poweroff (UART_DEV (1));
-
-    }
-  }
-
-  /* this should never be reached */
-  return NULL;
-}
-
-
-/* 
- * UART RX Callback function
- *
- * Discart 8th bit as PitInfo Teleinformation interface is 7N1
- * Append new char to ringbuffer
- * If new char is newline, send a message to processor thread
- */
-static void rx_cb (void *arg, uint8_t data)
-{
-  uart_t dev = (uart_t) arg;
-  data &= 0x7F;
-
-  if (data == '\n')
-    {
-      msg_t msg;
-      msg.content.value = (uint32_t) dev;
-      msg_send (&msg, processor_pid);
-    }
-  else if (data >= ' ')
-    {
-      ringbuffer_add_one (&(ctx[dev].rx_buf), data);
-    }
-}
 
 
 /*
  * Wrapper to gnrc_netapi_set RIOT-OS 
- * 
  */
 static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
 	    size_t data_len)
@@ -258,77 +177,82 @@ static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *d
   ret = gnrc_netapi_set (pid, opt, context, data, data_len);
   if (ret < 0)
     {
-      printf ("!: netapi_set: Can't set option\r\n");
+      zprintf ("!: netapi_set: Can't set option\r\n");
     }
   return ret;
 }
+
+
 
 /*
  * HW Initialisation
  */ 
 static void prepare_all (void)
 {
+  zprintf ("Start HW init\r\n");
 
-  printf ("Start HW init\r\n");
+  gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
+  gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
+  GPIOE->PCOR = 1 << 3 ;  // PE3 is GND
+  GPIOE->PSOR = 1 << 2 ;  // PE2 is 3.3
+
+
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
-
-  /* initialize UART */
-  for (unsigned i = 0; i < UART_NUMOF; i++) // Init ringbuffers for all UARTs
-    {
-      ringbuffer_init (&(ctx[i].rx_buf), ctx[i].rx_mem, UART_BUFSIZE);
-    }
-
-  int res;
-  int dev = 1;
-  res = uart_init (UART_DEV (1), 1200, rx_cb, (void *) dev);
-  if (res != UART_OK)
-    {
-      puts ("Error: Unable to initialize UART device\r\n");
-      return;
-    }
-  printf ("Successfully initialized UART_DEV(%i)\r\n", dev);
 
   /* initialize Network */
   gnrc_netif_t *iff = NULL;
   iff = gnrc_netif_iter (iff);
   if (iff == NULL)
     {
-      printf ("ERROR : NO INTERFACE \r\n");
+      zprintf ("ERROR : NO INTERFACE \r\n");
       return;
     }
   ifpid = iff->pid;
 
-  printf ("Switch to chan 11\r\n");
+  zprintf ("Switch to chan 11\r\n");
   int16_t val = 11;
   netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val,
 	      sizeof (int16_t));
 
   // Set PAN to 0xF00D
-  printf ("Set pan to 0xF00D\r\n");
+  zprintf ("Set pan to 0xF00D\r\n");
   val = 0xF00D;
   netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
 
   // Set address
-  printf ("Set addr to 00:...:99\r\n");
+  zprintf ("Set addr to 00:...:99\r\n");
   char src[24];
-  sprintf (src, "00:00:00:00:00:00:00:%02x", NODE_ID);
+  sprintf(src, "00:00:00:00:00:00:00:%02x", NODE_ID);
 
   size_t addr_len = gnrc_netif_addr_from_str (src, out);
   if (addr_len == 0)
     {
-      printf ("!!! Unable to parse address !!!\r\n");
+      zprintf ("!!! Unable to parse address !!!\r\n");
     }
   else
     {
-      printf ("!!! addr len %d !!!\r\n", addr_len);
       netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
     }
 
-  printf ("Done HW init\r\n");
+  zprintf ("Radio Init Done\r\n");
+
+
+
+
+  // Sensor Init
+  int result = bmx280_init(&bmx_dev, &bmx280_params[0]);
+  if (result == -1) {
+      zprintf("[Error] The given i2c is not enabled\r\n");
+  }
+
+  if (result == -2) {
+      zprintf("[Error] The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
+  }
+
+  zprintf ("I2C Init Done\r\n");
+
+
 }
-
-      
-
 
 /*
  * Use bandgap reference and ADC to measure board's voltage
@@ -347,28 +271,25 @@ int getBat(void){
 
 int main (void)
 {
+    LED0_ON; 
+
+#if SWO
+    SWO_Init(0x01,  48000000);
+#endif
 
   // INIT
-  printf("*** OFlabs 802.15.4 OFLMote Sensor - Teleinfo ***\r\n");
-  //  printf("*** Riot Release     %s\r\n", RIOTVERSION);
-  printf("*** OFlMotes Release %s\r\n", MOTESVERSION);
-  prepare_all ();
+  zprintf("\r\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\r\n");
+  zprintf("*** OFlMotes Release %s\r\n", MOTESVERSION);
+  prepare_all();
 
   loop_cntr=0; 
- 
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
 			       BLINKER_PRIO, 0,
 			       blinker_thread, NULL, "blink_thread");
 
-  /* start the processor thread */
-  processor_pid = thread_create (processor_stack, sizeof (processor_stack),
-				 PROCESSOR_PRIO, 0,
-				 processor_thread, NULL, "processor_thread");
-
   main_pid=thread_getpid();
-
 
   // Blink 3 times at start
   int j;
@@ -378,26 +299,44 @@ int main (void)
   msg_send (&msg, blinker_pid);
   }
 
+ // uart_poweroff(UART_DEV(0));
+
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
+        uart_poweron(UART_DEV(0));
+        zprintf("Resume for Hibernate\r\n");
+
+        // Blink
+        msg_t msg;
+        msg.content.value = 1;
+        msg_send (&msg, blinker_pid);
+
+        //uart_poweron(UART_DEV(0));
         // Enable Radio for TX
         netopt_state_t state;
         state = NETOPT_STATE_TX;
         netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
 
-        // Periodic misc info TX (battery level ...)
-        if ((loop_cntr % 5)==0){
-            sprintf (buffer, "DEVICE:DEV;VER=01;BAT=%d", getBat());
-            data_tx (buffer, strlen (buffer));
-        }
+        // Measure sensor and transmit
+        sensor_measure();
+        sprintf(buffer, "DEVICE:DEV;VER=01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
+          getBat(),
+          (temperature<0) ? '-' : '+',
+          temperature/100,
+          temperature % 100, 
+          pressure/100,
+          humidity/100, 
+          humidity%100);
+        data_tx (buffer, strlen (buffer));
 
         // Powersave (Disable Radio)
-        //state = NETOPT_STATE_OFF;
-        //netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-        //printf("Hibernate\r\n");
-        LED0_TOGGLE; 
-        xtimer_sleep (CYCLE_PAUSE_SEC);
+       // state = NETOPT_STATE_OFF;
+       // netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        zprintf("Hibernate\r\n");
+        uart_poweroff(UART_DEV(0));
+
+        xtimer_sleep(CYCLE_PAUSE_SEC);
         loop_cntr++; 
 
     }

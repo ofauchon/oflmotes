@@ -231,14 +231,10 @@ func parseArgs() {
 
 func main() {
 
-	doLog("--------------------------------------)\n")
-	doLog("OLFmotes gateway server (I love golang)\n")
-	doLog("--------------------------------------)\n")
-
+	doLog("OLFmotes gateway \n")
 	parseArgs()
 
 	// Inter routines communicatin
-	//messages := make(chan *Packet)
 	signals := make(chan *Packet)
 
 	// Deal with serial in a job !

@@ -62,7 +62,7 @@ func dump_packet(p *Packet) {
 
 func decode_packet(p *Packet) {
 
-	doLog("RAW MSG: %s", p.raw)
+	doLog("RAW MSG: %s\n", p.raw)
 
 	p.datamap = make(map[string]interface{})
 

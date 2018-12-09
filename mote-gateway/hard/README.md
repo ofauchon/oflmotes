@@ -4,6 +4,8 @@ This is the firmware for the OFLmote Gateway.
 
   * Build and flash
 
+Change RIOTBASE in Makefile to point to git clone  https://github.com/ofauchon/RIOT  (phywave-ftdi branch)
+
 ```
 make clean
 make BOARD=phywave-ftdi

@@ -48,18 +48,15 @@
 #include "bmx280_params.h"
 #include "bmx280.h"
 
-#define SWO 0
+// #define SWO
 
-#if SWO
-#include "swo.h"
 char buflog[255];
-  #define zprintf(args...) snprintf(buflog,sizeof(buflog),args); SWO_PrintString(buflog);
-#else
-#  define zprintf(args...) printf(args);
-#endif
 
-#define CYCLE_PAUSE_SEC 10
-#define READ_DELAY 10
+//#define zprintf(args...) snprintf(buflog,sizeof(buflog),args); SWO_PrintString(buflog);
+//#define zprintf(args...) printf(args);
+#define zprintf(args...) {}
+
+#define CYCLE_PAUSE_SEC 60
 #define UART_BUFSIZE        (128U)
 
 #ifndef NODE_ID
@@ -121,14 +118,14 @@ static int data_tx (char *data, char data_sz)
   pkt = gnrc_pktbuf_add (NULL, data, data_sz, GNRC_NETTYPE_UNDEF);
   if (pkt == NULL)
     {
-      puts ("error: packet buffer full");
+      zprintf("error: packet buffer full\r\n");
       return 1;
     }
 
   hdr = gnrc_netif_hdr_build (src, sizeof (src), dst, sizeof (dst));
   if (hdr == NULL)
     {
-      puts ("error: packet buffer full");
+      zprintf("error: packet buffer full\r\n");
       gnrc_pktbuf_release (pkt);
       return 1;
     }
@@ -136,7 +133,7 @@ static int data_tx (char *data, char data_sz)
   // and send it 
   if (gnrc_netapi_send (ifpid, pkt) < 1)
     {
-      puts ("error: unable to send");
+      zprintf("error: unable to send\r\n");
       gnrc_pktbuf_release (pkt);
       return 1;
     }
@@ -158,8 +155,10 @@ static void* blinker_thread (void *arg)
       // 
       msg_receive (&msg);
       LED0_ON;
+      LED1_ON;
       xtimer_sleep(1);
       LED0_OFF;
+      LED1_OFF;
       xtimer_sleep(1);
     }
   return NULL;
@@ -271,56 +270,54 @@ int getBat(void){
 
 int main (void)
 {
-    LED0_ON; 
+  LED0_ON;
+  LED1_ON;
+  loop_cntr=0; 
 
-#if SWO
-    SWO_Init(0x01,  48000000);
-#endif
+//  SWO_Init(0x01,  48000000);
 
   // INIT
   zprintf("\r\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\r\n");
   zprintf("*** OFlMotes Release %s\r\n", MOTESVERSION);
-  prepare_all();
 
-  loop_cntr=0; 
+  prepare_all();
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
 			       BLINKER_PRIO, 0,
 			       blinker_thread, NULL, "blink_thread");
-
   main_pid=thread_getpid();
 
   // Blink 3 times at start
   int j;
   for (j=0;j<3; j++){
-  msg_t msg;
-  msg.content.value = 1;
-  msg_send (&msg, blinker_pid);
+    msg_t msg;
+    msg.content.value = 1;
+    msg_send (&msg, blinker_pid);
   }
 
- // uart_poweroff(UART_DEV(0));
+  sensor_measure();
+  //uart_poweroff(UART_DEV(0));
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
-        uart_poweron(UART_DEV(0));
-        zprintf("Resume for Hibernate\r\n");
-
         // Blink
         msg_t msg;
         msg.content.value = 1;
         msg_send (&msg, blinker_pid);
 
-        //uart_poweron(UART_DEV(0));
+//        uart_poweron(UART_DEV(0));
         // Enable Radio for TX
-        netopt_state_t state;
-        state = NETOPT_STATE_TX;
-        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+  //      netopt_state_t state;
+  //      state = NETOPT_STATE_TX;
+  //      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
 
+/*
         // Measure sensor and transmit
         sensor_measure();
-        sprintf(buffer, "DEVICE:DEV;VER=01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
+
+        sprintf(buffer, "DEVICE:DEV;VER:01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
           getBat(),
           (temperature<0) ? '-' : '+',
           temperature/100,
@@ -329,14 +326,19 @@ int main (void)
           humidity/100, 
           humidity%100);
         data_tx (buffer, strlen (buffer));
+*/
+        sprintf(buffer, "DEVICE:DEV;VER:01;CNT:%05d;BATLEV:%04d",loop_cntr, getBat() ); 
+        data_tx (buffer, strlen (buffer));
 
         // Powersave (Disable Radio)
        // state = NETOPT_STATE_OFF;
        // netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-        zprintf("Hibernate\r\n");
-        uart_poweroff(UART_DEV(0));
+      //  zprintf("Hibernate\r\n");
 
+        // Disable UART to enter LPM and sleep
+  //      uart_poweroff(UART_DEV(0));
         xtimer_sleep(CYCLE_PAUSE_SEC);
+
         loop_cntr++; 
 
     }

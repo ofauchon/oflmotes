@@ -61,8 +61,16 @@ void board_init(void)
     gpio_set(LED0_PIN);
     gpio_init(LED1_PIN, GPIO_OUT);
     gpio_set(LED1_PIN);
-    gpio_init(LED2_PIN, GPIO_OUT);
-    gpio_set(LED2_PIN);
+
+    // Safeguard: Infinite loop if board started with buttons pushed
+    // This way, we avoid bricking the device (bad pin init, low power modes and no jtag...) 
+    gpio_init(BTN0_PIN, GPIO_IN_PU);
+    gpio_init(BTN1_PIN, GPIO_IN_PU);
+    if (!gpio_read(BTN1_PIN) ||  !gpio_read(BTN1_PIN) ) {
+        gpio_set(LED0_PIN); 
+        gpio_set(LED1_PIN); 
+        while(1){}
+    }
 
     modem_clock_init();
 

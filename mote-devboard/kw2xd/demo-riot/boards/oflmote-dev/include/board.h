@@ -51,24 +51,19 @@ extern "C"
  * @{
  */
 #define LED0_PIN            GPIO_PIN(PORT_C, 4)
-#define LED1_PIN            GPIO_PIN(PORT_D, 4)
-#define LED2_PIN            GPIO_PIN(PORT_A, 4)
+#define LED1_PIN            GPIO_PIN(PORT_C, 5)
 
 #define LED0_MASK           (1 << 4)
-#define LED1_MASK           (1 << 4)
-#define LED2_MASK           (1 << 4)
+#define LED1_MASK           (1 << 5)
 
 #define LED0_ON            (GPIOC->PSOR = LED0_MASK)
 #define LED0_OFF           (GPIOC->PCOR = LED0_MASK)
 #define LED0_TOGGLE        (GPIOC->PTOR = LED0_MASK)
 
-#define LED1_ON            (GPIOD->PCOR = LED1_MASK)
-#define LED1_OFF           (GPIOD->PSOR = LED1_MASK)
-#define LED1_TOGGLE        (GPIOD->PTOR = LED1_MASK)
+#define LED1_ON            (GPIOC->PSOR = LED1_MASK)
+#define LED1_OFF           (GPIOC->PCOR = LED1_MASK)
+#define LED1_TOGGLE        (GPIOC->PTOR = LED1_MASK)
 
-#define LED2_ON            (GPIOA->PCOR = LED2_MASK)
-#define LED2_OFF           (GPIOA->PSOR = LED2_MASK)
-#define LED2_TOGGLE        (GPIOA->PTOR = LED2_MASK)
 /** @} */
 
 /**
@@ -84,9 +79,9 @@ extern "C"
  * @name Macro for capacitive sensor button.
  * @{
  */
-#define BTN1_PORT           PORTC
-#define BTN1_PIN            GPIO_PIN(PORT_C, 6)
-#define BTN1_MODE           GPIO_IN
+#define BTN1_PORT           PORTD
+#define BTN1_PIN            GPIO_PIN(PORT_D, 2)
+#define BTN1_MODE           GPIO_IN_PU
 /** @} */
 
 /**

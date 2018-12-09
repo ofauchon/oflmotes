@@ -19,11 +19,13 @@ QUIET ?= 1
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
 USEMODULE += netstats_l2 
+# UART removed as KW2x don't have LPUART and regular UART Block Low Power Mode
 USEMODULE += periph_uart
 USEMODULE += gnrc_mac 
 USEMODULE += periph_llwu
 USEMODULE += xtimer
 
+# UART removed as KW2x don't have LPUART and regular UART Block Low Power Mode
 FEATURES_REQUIRED = periph_uart
 FEATURES_REQUIRED += periph_rtt
 FEATURES_REQUIRED += periph_adc
@@ -45,8 +47,8 @@ MOTES_BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
 BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
 CFLAGS += -DMOTESVERSION=\"git.$(MOTES_BUILD_VERSION).$(BUILD_DATE)\"
 
-#OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
-OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 
+OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
+#OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 
 
 
 include $(RIOTBASE)/Makefile.include

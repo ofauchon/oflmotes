@@ -4,11 +4,12 @@
 #include "kernel_types.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void dump_hex(void* pData, size_t pLen);
-void dump_hex_compact(void* pData, size_t pLen);
+  void dump_hex (void *pData, size_t pLen);
+  void dump_hex_compact (void *pData, size_t pLen);
 
 
 
@@ -16,6 +17,5 @@ void dump_hex_compact(void* pData, size_t pLen);
 }
 #endif
 
-#endif /* UTIL_H */
+#endif				/* UTIL_H */
 /** @} */
-

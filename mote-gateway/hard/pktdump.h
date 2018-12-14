@@ -25,7 +25,8 @@
 #include "kernel_types.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -52,7 +53,7 @@ extern "C" {
 /**
  * @brief   The PID of the pktdump thread
  */
-extern kernel_pid_t gnrc_pktdump_pid;
+  extern kernel_pid_t gnrc_pktdump_pid;
 
 /**
  * @brief   Start the packet dump thread and listening for incoming packets
@@ -60,11 +61,11 @@ extern kernel_pid_t gnrc_pktdump_pid;
  * @return  PID of the pktdump thread
  * @return  negative value on error
  */
-kernel_pid_t gnrc_pktdump_init(void);
+  kernel_pid_t gnrc_pktdump_init (void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* NET_GNRC_PKTDUMP_H */
+#endif				/* NET_GNRC_PKTDUMP_H */
 /** @} */

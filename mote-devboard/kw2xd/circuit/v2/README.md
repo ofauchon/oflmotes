@@ -5,6 +5,9 @@ v2.0
 
   - New design with more led, buttons, AAA Batteries
 
+<img src="devboard_kw2xd_circuit_v2.0.png" alt="v1.0 board circuit" width="400px"/>
+
+
 v2.1
 
   - Add Restrict / Keepouts areas on Phynode module

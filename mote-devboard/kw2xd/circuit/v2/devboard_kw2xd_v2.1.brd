@@ -32,7 +32,7 @@
 <layer number="36" name="bGlue" color="7" fill="5" visible="yes" active="yes"/>
 <layer number="37" name="tTest" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="38" name="bTest" color="7" fill="1" visible="yes" active="yes"/>
-<layer number="39" name="tKeepout" color="4" fill="11" visible="no" active="yes"/>
+<layer number="39" name="tKeepout" color="4" fill="11" visible="yes" active="yes"/>
 <layer number="40" name="bKeepout" color="1" fill="11" visible="yes" active="yes"/>
 <layer number="41" name="tRestrict" color="4" fill="10" visible="yes" active="yes"/>
 <layer number="42" name="bRestrict" color="1" fill="10" visible="yes" active="yes"/>
@@ -152,8 +152,7 @@
 <wire x1="40.64" y1="78.74" x2="40.64" y2="25.4" width="0.1524" layer="20"/>
 <wire x1="40.64" y1="25.4" x2="1.27" y2="25.4" width="0.1524" layer="20"/>
 <wire x1="1.27" y1="25.4" x2="1.27" y2="78.74" width="0.1524" layer="20"/>
-<text x="10.16" y="26.67" size="1.016" layer="25">OFLMotes KW2xD Dev Board v2.0
-http://www.oflabs.com/oflmotes</text>
+<text x="12.7" y="26.67" size="0.6096" layer="1">kw2xd-dev_2.1 www.oflabs.com/oflmotes</text>
 <rectangle x1="12.192" y1="41.021" x2="29.718" y2="67.818" layer="39"/>
 <rectangle x1="12.192" y1="41.021" x2="29.718" y2="67.818" layer="39"/>
 <rectangle x1="14.732" y1="42.291" x2="32.258" y2="69.088" layer="39"/>
@@ -1325,10 +1324,4 @@ design rules under a new name.</description>
 </signals>
 </board>
 </drawing>
-<compatibility>
-<note version="6.3" minversion="6.2.2" severity="warning">
-Since Version 6.2.2 text objects can contain more than one line,
-which will not be processed correctly with this version.
-</note>
-</compatibility>
 </eagle>

@@ -297,7 +297,6 @@ int main (void)
   }
 
   sensor_measure();
-  //uart_poweroff(UART_DEV(0));
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
@@ -307,11 +306,11 @@ int main (void)
         msg.content.value = 1;
         msg_send (&msg, blinker_pid);
 
-//        uart_poweron(UART_DEV(0));
         // Enable Radio for TX
-  //      netopt_state_t state;
-  //      state = NETOPT_STATE_TX;
-  //      netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        netopt_state_t state;
+        state = NETOPT_STATE_TX;
+        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        xtimer_sleep(1);
 
 /*
         // Measure sensor and transmit
@@ -329,10 +328,11 @@ int main (void)
 */
         sprintf(buffer, "DEVICE:DEV;VER:01;CNT:%05d;BATLEV:%04d",loop_cntr, getBat() ); 
         data_tx (buffer, strlen (buffer));
+        xtimer_sleep(1);
 
         // Powersave (Disable Radio)
-       // state = NETOPT_STATE_OFF;
-       // netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        state = NETOPT_STATE_OFF;
+        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
       //  zprintf("Hibernate\r\n");
 
         // Disable UART to enter LPM and sleep

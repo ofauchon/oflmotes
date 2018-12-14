@@ -1,5 +1,7 @@
 # v1.0 Hardware 
 
+First design, proof of concept.
+
 <img src="res/board_v1.0.jpg" alt="v1.0 board picture" width="400px"/>
 
 # v2.0 Hardware

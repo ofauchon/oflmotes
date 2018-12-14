@@ -4636,11 +4636,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <label x="55.88" y="50.8" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="POWER" gate="G$1" pin="2"/>
-<wire x1="238.76" y1="33.02" x2="231.14" y2="33.02" width="0.1524" layer="91"/>
-<label x="231.14" y="33.02" size="1.778" layer="95" rot="MR0"/>
-</segment>
-<segment>
 <wire x1="40.64" y1="142.24" x2="40.64" y2="129.54" width="0.1524" layer="91"/>
 <pinref part="R9" gate="G$1" pin="2"/>
 <label x="40.64" y="142.24" size="1.778" layer="95"/>
@@ -4669,11 +4664,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="J1" gate="G$1" pin="VCC"/>
 <wire x1="208.28" y1="58.42" x2="198.12" y2="58.42" width="0.1524" layer="91"/>
 <label x="198.12" y="58.42" size="1.778" layer="95"/>
-</segment>
-<segment>
-<pinref part="BT1" gate="G$1" pin="+"/>
-<wire x1="7.62" y1="167.64" x2="0" y2="167.64" width="0.1524" layer="91"/>
-<label x="0" y="167.64" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="NRST" class="0">
@@ -5202,6 +5192,18 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="22.86" y1="33.02" x2="22.86" y2="50.8" width="0.1524" layer="91"/>
 <pinref part="R4" gate="G$1" pin="1"/>
 <pinref part="S3" gate="G$1" pin="2"/>
+</segment>
+</net>
+<net name="VBAT" class="0">
+<segment>
+<pinref part="BT1" gate="G$1" pin="+"/>
+<wire x1="7.62" y1="167.64" x2="0" y2="167.64" width="0.1524" layer="91"/>
+<label x="0" y="167.64" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="POWER" gate="G$1" pin="2"/>
+<wire x1="238.76" y1="33.02" x2="231.14" y2="33.02" width="0.1524" layer="91"/>
+<label x="231.14" y="33.02" size="1.778" layer="95" rot="MR0"/>
 </segment>
 </net>
 </nets>

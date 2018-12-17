@@ -66,7 +66,7 @@ void board_init(void)
     // This way, we avoid bricking the device (bad pin init, low power modes and no jtag...) 
     gpio_init(BTN0_PIN, GPIO_IN_PU);
     gpio_init(BTN1_PIN, GPIO_IN_PU);
-    if (!gpio_read(BTN1_PIN) ||  !gpio_read(BTN1_PIN) ) {
+    if (!gpio_read(BTN0_PIN) ||  !gpio_read(BTN1_PIN) ) {
         gpio_set(LED0_PIN); 
         gpio_set(LED1_PIN); 
         while(1){}

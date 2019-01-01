@@ -50,19 +50,19 @@ extern "C"
  * @name    LED pin definitions and handlers
  * @{
  */
-#define LED0_PIN            GPIO_PIN(PORT_E, 0)
-#define LED1_PIN            GPIO_PIN(PORT_E, 1)
+#define LED0_PIN            GPIO_PIN(PORT_D, 5)
+#define LED1_PIN            GPIO_PIN(PORT_D, 4)
 
-#define LED0_MASK           (1 << 0)
-#define LED1_MASK           (1 << 1)
+#define LED0_MASK           (1 << 5)
+#define LED1_MASK           (1 << 4)
 
-#define LED0_ON            (GPIOE->PSOR = LED0_MASK)
-#define LED0_OFF           (GPIOE->PCOR = LED0_MASK)
-#define LED0_TOGGLE        (GPIOE->PTOR = LED0_MASK)
+#define LED0_ON            (GPIOD->PSOR = LED0_MASK)
+#define LED0_OFF           (GPIOD->PCOR = LED0_MASK)
+#define LED0_TOGGLE        (GPIOD->PTOR = LED0_MASK)
 
-#define LED1_ON            (GPIOE->PSOR = LED1_MASK)
-#define LED1_OFF           (GPIOE->PCOR = LED1_MASK)
-#define LED1_TOGGLE        (GPIOE->PTOR = LED1_MASK)
+#define LED1_ON            (GPIOD->PSOR = LED1_MASK)
+#define LED1_OFF           (GPIOD->PCOR = LED1_MASK)
+#define LED1_TOGGLE        (GPIOD->PTOR = LED1_MASK)
 
 /** @} */
 

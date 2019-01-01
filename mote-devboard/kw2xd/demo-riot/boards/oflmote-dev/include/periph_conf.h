@@ -276,8 +276,8 @@ static const spi_conf_t spi_config[] = {
 static const i2c_conf_t i2c_config[] = {
     {
         .i2c = I2C1,
-        .scl_pin = GPIO_PIN(PORT_E,  24),
-        .sda_pin = GPIO_PIN(PORT_E,  23),
+        .scl_pin = GPIO_PIN(PORT_E,  1),
+        .sda_pin = GPIO_PIN(PORT_E,  0),
         .freq = CLOCK_BUSCLOCK,
         .speed = I2C_SPEED_FAST,
         .irqn = I2C1_IRQn,

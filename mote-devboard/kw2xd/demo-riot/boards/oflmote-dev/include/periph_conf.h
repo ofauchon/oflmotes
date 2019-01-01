@@ -281,8 +281,8 @@ static const i2c_conf_t i2c_config[] = {
         .freq = CLOCK_BUSCLOCK,
         .speed = I2C_SPEED_FAST,
         .irqn = I2C1_IRQn,
-        .scl_pcr = (PORT_PCR_MUX(4) | PORT_PCR_ODE_MASK),
-        .sda_pcr = (PORT_PCR_MUX(4) | PORT_PCR_ODE_MASK),
+        .scl_pcr = (PORT_PCR_MUX(6) | PORT_PCR_ODE_MASK),
+        .sda_pcr = (PORT_PCR_MUX(6) | PORT_PCR_ODE_MASK),
     },
 };
 #define I2C_NUMOF           (sizeof(i2c_config) / sizeof(i2c_config[0]))

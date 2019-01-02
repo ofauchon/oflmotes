@@ -191,12 +191,6 @@ static void hw_init (void)
 {
   printf ("hw_init: Start\n");
 
-  gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
-  gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
-  GPIOE->PCOR = 1 << 3 ;  // PE3 is GND
-  GPIOE->PSOR = 1 << 2 ;  // PE2 is 3.3
-
-
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
 
   /* initialize Network */
@@ -233,8 +227,6 @@ static void hw_init (void)
     {
       netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
     }
-
-
 
   // Sensor Init
   // Right now, I'm not sure i2c transactions are working under LLS power mode

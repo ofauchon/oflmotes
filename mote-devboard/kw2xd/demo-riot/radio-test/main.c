@@ -24,6 +24,9 @@
 #include "board.h"
 #include "periph_conf.h"
 
+#include "pm_layered.h"
+
+
 #include "thread.h"
 #include "timex.h"
 #include "xtimer.h"
@@ -52,10 +55,6 @@
 
 char buflog[255];
 
-//#define zprintf(args...) snprintf(buflog,sizeof(buflog),args); SWO_PrintString(buflog);
-//#define zprintf(args...) printf(args);
-#define zprintf(args...) {}
-
 #define CYCLE_PAUSE_SEC 60
 #define UART_BUFSIZE        (128U)
 
@@ -80,12 +79,13 @@ static int16_t temperature;
 static uint32_t pressure;
 static uint16_t humidity;
 
-static uint8_t loop_cntr; 
 
 /*
  * 
  */
 static void sensor_measure(void){
+        printf("sensor_measure : Sensor measure Start\n");
+
           /* Get temperature in centi degrees Celsius */
         temperature = bmx280_read_temperature(&bmx_dev);
         bool negative = (temperature < 0);
@@ -99,6 +99,7 @@ static void sensor_measure(void){
         /* Get pressure in %rH */
         humidity = bme280_read_humidity(&bmx_dev);
 
+        printf("sensor_measure : Sensor measure Done\n");
 }
 
 
@@ -107,7 +108,7 @@ static void sensor_measure(void){
  */
 static int data_tx (char *data, char data_sz)
 {
-  zprintf("data_tx: %s\r\n", data);
+  printf("data_tx: %s\r\n", data);
 
   uint8_t src[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, NODE_ID };
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
@@ -118,14 +119,14 @@ static int data_tx (char *data, char data_sz)
   pkt = gnrc_pktbuf_add (NULL, data, data_sz, GNRC_NETTYPE_UNDEF);
   if (pkt == NULL)
     {
-      zprintf("error: packet buffer full\r\n");
+      printf("error: packet buffer full\r\n");
       return 1;
     }
 
   hdr = gnrc_netif_hdr_build (src, sizeof (src), dst, sizeof (dst));
   if (hdr == NULL)
     {
-      zprintf("error: packet buffer full\r\n");
+      printf("error: packet buffer full\r\n");
       gnrc_pktbuf_release (pkt);
       return 1;
     }
@@ -133,7 +134,7 @@ static int data_tx (char *data, char data_sz)
   // and send it 
   if (gnrc_netapi_send (ifpid, pkt) < 1)
     {
-      zprintf("error: unable to send\r\n");
+      printf("error: unable to send\r\n");
       gnrc_pktbuf_release (pkt);
       return 1;
     }
@@ -176,7 +177,7 @@ static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *d
   ret = gnrc_netapi_set (pid, opt, context, data, data_len);
   if (ret < 0)
     {
-      zprintf ("!: netapi_set: Can't set option\r\n");
+      printf ("!: netapi_set: Can't set option\r\n");
     }
   return ret;
 }
@@ -186,9 +187,9 @@ static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *d
 /*
  * HW Initialisation
  */ 
-static void prepare_all (void)
+static void hw_init (void)
 {
-  zprintf ("Start HW init\r\n");
+  printf ("hw_init: Start\n");
 
   gpio_init(GPIO_PIN(PORT_E, 2), GPIO_OUT);
   gpio_init(GPIO_PIN(PORT_E, 3), GPIO_OUT);
@@ -203,53 +204,50 @@ static void prepare_all (void)
   iff = gnrc_netif_iter (iff);
   if (iff == NULL)
     {
-      zprintf ("ERROR : NO INTERFACE \r\n");
+      printf ("hw_init: ERROR : NO INTERFACE\n");
       return;
     }
   ifpid = iff->pid;
 
-  zprintf ("Switch to chan 11\r\n");
+  printf ("hw_init: Switch to chan 11\n");
   int16_t val = 11;
   netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val,
 	      sizeof (int16_t));
 
   // Set PAN to 0xF00D
-  zprintf ("Set pan to 0xF00D\r\n");
+  printf ("hw_init: Set pan to 0xF00D\n");
   val = 0xF00D;
   netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
 
   // Set address
-  zprintf ("Set addr to 00:...:99\r\n");
+  printf ("hw_init: Set addr to 00:...:99\n");
   char src[24];
   sprintf(src, "00:00:00:00:00:00:00:%02x", NODE_ID);
 
   size_t addr_len = gnrc_netif_addr_from_str (src, out);
   if (addr_len == 0)
     {
-      zprintf ("!!! Unable to parse address !!!\r\n");
+      printf ("hw_init: Unable to parse address !!!\n");
     }
   else
     {
       netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
     }
 
-  zprintf ("Radio Init Done\r\n");
-
-
 
 
   // Sensor Init
+  // Right now, I'm not sure i2c transactions are working under LLS power mode
   int result = bmx280_init(&bmx_dev, &bmx280_params[0]);
   if (result == -1) {
-      zprintf("[Error] The given i2c is not enabled\r\n");
+      printf("hw_init: ERROR: The given i2c is not enabled\r\n");
   }
 
   if (result == -2) {
-      zprintf("[Error] The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
+      printf("hw_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
   }
-
-  zprintf ("I2C Init Done\r\n");
-
+  printf ("hw_init: I2C Init Done\r\n");
+  printf ("hw_init: All Done\n");
 
 }
 
@@ -268,19 +266,40 @@ int getBat(void){
 }
 
 
+
+void radio_on(void){
+    puts("Radio ON");
+    netopt_state_t state;
+    state = NETOPT_STATE_IDLE;
+    gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+ //   KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
+}
+
+void radio_off(void){
+    puts("Radio OFF!");
+    netopt_state_t state;
+    state = NETOPT_STATE_OFF;
+    gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+  //  KW2XDRF_GPIO->PCOR = (1 << KW2XDRF_RST_PIN);
+}
+
+
+
+
+
 int main (void)
 {
-  LED0_ON;
-  LED1_ON;
-  loop_cntr=0; 
+  uint16_t loop_cntr=0; 
+  LED0_ON; 
 
-//  SWO_Init(0x01,  48000000);
+  printf("\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\n");
+  printf("*** OFlMotes Release %s\n", MOTESVERSION);
 
-  // INIT
-  zprintf("\r\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\r\n");
-  zprintf("*** OFlMotes Release %s\r\n", MOTESVERSION);
 
-  prepare_all();
+  // Hardware init contains i2c code that don't support Low Power Modes
+  pm_block(KINETIS_PM_STOP);
+  hw_init();
+  pm_unblock(KINETIS_PM_STOP);
 
   /* start the blinker thread */
   blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
@@ -296,25 +315,32 @@ int main (void)
     msg_send (&msg, blinker_pid);
   }
 
+  // i2c code that don't support Low Power Modes
+  pm_block(KINETIS_PM_STOP);
   sensor_measure();
+  pm_unblock(KINETIS_PM_STOP);
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
-        // Blink
+        printf("main : Start cycle\n");
+
+        // Disable access to Low Power Modes .
+        // It seems i2c bus is not working in STOP modes (STOP/LLS)
+
+        // Async LED Blink
         msg_t msg;
         msg.content.value = 1;
         msg_send (&msg, blinker_pid);
 
-        // Enable Radio for TX
-        netopt_state_t state;
-        state = NETOPT_STATE_TX;
-        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-        xtimer_sleep(1);
-
-/*
-        // Measure sensor and transmit
+        // Measure sensor and transmit (no low power mode)
+        pm_block(KINETIS_PM_STOP);
         sensor_measure();
+        pm_unblock(KINETIS_PM_STOP);
+
+        // Enable Radio for TX
+        printf("main : Radio ON and TX data\n");
+        radio_on();
 
         sprintf(buffer, "DEVICE:DEV;VER:01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
           getBat(),
@@ -324,23 +350,19 @@ int main (void)
           pressure/100,
           humidity/100, 
           humidity%100);
-        data_tx (buffer, strlen (buffer));
-*/
-        sprintf(buffer, "DEVICE:DEV;VER:01;CNT:%05d;BATLEV:%04d",loop_cntr, getBat() ); 
-        data_tx (buffer, strlen (buffer));
-        xtimer_sleep(1);
 
-        // Powersave (Disable Radio)
-        state = NETOPT_STATE_OFF;
-        netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
-      //  zprintf("Hibernate\r\n");
+        data_tx (buffer, strlen (buffer));
 
-        // Disable UART to enter LPM and sleep
-  //      uart_poweroff(UART_DEV(0));
+        //sprintf(buffer, "DEVICE:DEV;VER:01;CNT:%05d;BATLEV:%04d",loop_cntr, getBat() ); 
+        //data_tx (buffer, strlen (buffer));
+
+        printf("main : Radio OFF and Hibernate\n");
+        radio_off();
         xtimer_sleep(CYCLE_PAUSE_SEC);
 
         loop_cntr++; 
 
     }
+
 }
 

@@ -1,5 +1,5 @@
 # name of your application
-APPLICATION = radio
+APPLICATION = node-bme280
 BOARD ?= oflmote-dev
 
 PORT = /dev/ttyUSB1

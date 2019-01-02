@@ -11,7 +11,7 @@
  * @{
  *
  * @file
- * @brief       802.15.4 Teleinfo Mote Sensor
+ * @brief       802.15.4 BMX280 Temperature,pressure,humidity Sensor
  *
  * @author      Olivier Fauchon <ofauchon2204@gmail.com>
  *
@@ -25,7 +25,6 @@
 #include "periph_conf.h"
 
 #include "pm_layered.h"
-
 
 #include "thread.h"
 #include "timex.h"
@@ -80,26 +79,27 @@ static uint32_t pressure;
 static uint16_t humidity;
 
 
+
 /*
- * 
+ * Run measurements
  */
 static void sensor_measure(void){
-        printf("sensor_measure : Sensor measure Start\n");
+    printf("sensor_measure: Starting measures\n");
 
-          /* Get temperature in centi degrees Celsius */
-        temperature = bmx280_read_temperature(&bmx_dev);
-        bool negative = (temperature < 0);
-        if (negative) {
-            temperature = -temperature;
-        }
+    /* Get temperature in centi degrees Celsius */
+    temperature = bmx280_read_temperature(&bmx_dev);
+    bool negative = (temperature < 0);
+    if (negative) {
+        temperature = -temperature;
+    }
 
-        /* Get pressure in Pa */
-        pressure = bmx280_read_pressure(&bmx_dev);
+    /* Get pressure in Pa */
+    pressure = bmx280_read_pressure(&bmx_dev);
 
-        /* Get pressure in %rH */
-        humidity = bme280_read_humidity(&bmx_dev);
+    /* Get pressure in %rH */
+    humidity = bme280_read_humidity(&bmx_dev);
 
-        printf("sensor_measure : Sensor measure Done\n");
+    printf("sensor_measure : Sensor measure Done\n");
 }
 
 

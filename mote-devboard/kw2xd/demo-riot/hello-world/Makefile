@@ -22,3 +22,7 @@ OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]'
 #OPENOCD_EXTRA_INIT ?= "-d 3"
 
 include $(RIOTBASE)/Makefile.include
+
+picocom:   
+	picocom /dev/ttyUSB0 --baud 115200  --imap crcrlf,lfcrlf
+

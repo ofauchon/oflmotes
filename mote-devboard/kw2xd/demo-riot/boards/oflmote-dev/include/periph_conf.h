@@ -50,7 +50,8 @@ static const clock_config_t clock_config = {
         KINETIS_CLOCK_RTCOSC_EN |
         KINETIS_CLOCK_USE_FAST_IRC |
         0,
-    .default_mode = KINETIS_MCG_MODE_PEE,
+//    .default_mode = KINETIS_MCG_MODE_PEE,
+    .default_mode = KINETIS_MCG_MODE_FEI,
     /* The modem generates a 4 MHz clock signal */
     .erc_range = KINETIS_MCG_ERC_RANGE_HIGH,
     .osc_clc = 0, /* OSC0 is unused*/

@@ -12,3 +12,4 @@ mote-devboard/kw2xd/circuit/*/*.$$$
 mote-devboard/kw2xd/circuit/*/*.whl
 mote-devboard/kw2xd/circuit/*/*.sol
 mote-devboard/kw2xd/circuit/*/*.sts
+mote-devboard/kw2xd/circuit/*/*.job

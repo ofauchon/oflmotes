@@ -1,5 +1,5 @@
 # name of your application
-APPLICATION = radio
+APPLICATION = node-bme280
 BOARD ?= oflmote-dev
 
 PORT = /dev/ttyUSB1
@@ -18,16 +18,16 @@ QUIET ?= 1
 
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
-USEMODULE += netstats_l2 
+#USEMODULE += netstats_l2 
 # UART removed as KW2x don't have LPUART and regular UART Block Low Power Mode
-USEMODULE += periph_uart
-USEMODULE += gnrc_mac 
-USEMODULE += periph_llwu
+#USEMODULE += periph_uart
+#USEMODULE += gnrc_mac 
+#USEMODULE += periph_llwu
 USEMODULE += xtimer
 
 # UART removed as KW2x don't have LPUART and regular UART Block Low Power Mode
-FEATURES_REQUIRED = periph_uart
-FEATURES_REQUIRED += periph_rtt
+#FEATURES_REQUIRED = periph_uart
+#FEATURES_REQUIRED += periph_rtt
 FEATURES_REQUIRED += periph_adc
 
 BOARD_PROVIDES_NETIF := oflmote-dev

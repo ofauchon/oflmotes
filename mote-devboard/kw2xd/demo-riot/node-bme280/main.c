@@ -62,13 +62,6 @@ char buflog[255];
 #define NODE_ID 0xFA
 #endif
 
-
-
-/* Threads Stuff */
-#define BLINKER_PRIO        (THREAD_PRIORITY_MAIN - 2)
-static kernel_pid_t blinker_pid;
-static char blinker_stack[THREAD_STACKSIZE_MAIN];
-static kernel_pid_t main_pid;
 static kernel_pid_t ifpid = 0;
 
 
@@ -139,30 +132,6 @@ static int data_tx (char *data, char data_sz)
       return 1;
     }
   return 1;
-}
-
-
-/*
- * Thread for led blinking 
- */
-static void* blinker_thread (void *arg)
-{
-  (void) arg;
-  msg_t msg;
-  msg_t msg_queue[8];
-  msg_init_queue (msg_queue, 8);
-  while (1)
-    {
-      // 
-      msg_receive (&msg);
-      LED0_ON;
-      LED1_ON;
-      xtimer_sleep(1);
-      LED0_OFF;
-      LED1_OFF;
-      xtimer_sleep(1);
-    }
-  return NULL;
 }
 
 
@@ -238,7 +207,7 @@ static void hw_init (void)
   if (result == -2) {
       printf("hw_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
   }
-  printf ("hw_init: I2C Init Done\r\n");
+  printf ("hw_init: I2C Init Done\n");
   printf ("hw_init: All Done\n");
 
 }
@@ -260,7 +229,6 @@ int getBat(void){
 
 
 void radio_on(void){
-    puts("Radio ON");
     netopt_state_t state;
     state = NETOPT_STATE_IDLE;
     gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
@@ -268,7 +236,6 @@ void radio_on(void){
 }
 
 void radio_off(void){
-    puts("Radio OFF!");
     netopt_state_t state;
     state = NETOPT_STATE_OFF;
     gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
@@ -282,7 +249,8 @@ void radio_off(void){
 int main (void)
 {
   uint16_t loop_cntr=0; 
-  LED0_ON; 
+  LED0_OFF; 
+  LED1_OFF; 
 
   printf("\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\n");
   printf("*** OFlMotes Release %s\n", MOTESVERSION);
@@ -293,37 +261,25 @@ int main (void)
   hw_init();
   pm_unblock(KINETIS_PM_STOP);
 
-  /* start the blinker thread */
-  blinker_pid = thread_create (blinker_stack, sizeof (blinker_stack),
-			       BLINKER_PRIO, 0,
-			       blinker_thread, NULL, "blink_thread");
-  main_pid=thread_getpid();
-
-  // Blink 3 times at start
-  int j;
-  for (j=0;j<3; j++){
-    msg_t msg;
-    msg.content.value = 1;
-    msg_send (&msg, blinker_pid);
-  }
-
   // i2c code that don't support Low Power Modes
-  pm_block(KINETIS_PM_STOP);
-  sensor_measure();
-  pm_unblock(KINETIS_PM_STOP);
+  // pm_block(KINETIS_PM_STOP);
+  // sensor_measure();
+  // pm_unblock(KINETIS_PM_STOP);
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
         printf("main : Start cycle\n");
 
+        uint8_t cnt; 
+        for (cnt=0; cnt<4; cnt++){
+            xtimer_usleep(200 * 1000); 
+            LED0_TOGGLE;
+        }
+
+
         // Disable access to Low Power Modes .
         // It seems i2c bus is not working in STOP modes (STOP/LLS)
-
-        // Async LED Blink
-        msg_t msg;
-        msg.content.value = 1;
-        msg_send (&msg, blinker_pid);
 
         // Measure sensor and transmit (no low power mode)
         pm_block(KINETIS_PM_STOP);
@@ -332,7 +288,7 @@ int main (void)
 
         // Enable Radio for TX
         printf("main : Radio ON and TX data\n");
-        radio_on();
+        //radio_on();
 
         sprintf(buffer, "DEVICE:DEV;VER:01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
           getBat(),
@@ -349,7 +305,7 @@ int main (void)
         //data_tx (buffer, strlen (buffer));
 
         printf("main : Radio OFF and Hibernate\n");
-        radio_off();
+        //radio_off();
         xtimer_sleep(CYCLE_PAUSE_SEC);
 
         loop_cntr++; 

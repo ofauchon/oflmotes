@@ -53,16 +53,16 @@ func dump_packet(p *Packet) {
 	//doLog("Dump: Raw:'%s'\n", hex.Dump( []byte(p.raw)  ) );
 	doLog("Dump: Payload:'%s'\n", p.payload)
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac)
-	doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan)
+	//doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan)
 	doLog("Dump: lqi:'%d' rssi: '%d'\n", p.lqi, p.rssi)
 	for k, v := range p.datamap {
-		doLog("Dump: key/values: '%s' value: '%v'\n", k, v)
+		doLog("Dump: '%s' => '%v'\n", k, v)
 	}
 }
 
 func decode_packet(p *Packet) {
 
-	doLog("RAW MSG: %s\n", p.raw)
+	doLog("RECEIVED: %s\n", p.raw)
 
 	p.datamap = make(map[string]interface{})
 
@@ -142,12 +142,13 @@ func push_influx(p *Packet) {
 	p.datamap["LQI"] = p.lqi
 	fields := p.datamap
 
+/*
 	for k, v := range p.datamap {
 		doLog("Dump_send_influx: key/values: '%s' value: '%v'\n", k, v)
 	}
-
+*/
 	if len(p.datamap) > 0 {
-		doLog("Sending to influx server\n")
+//		doLog("Sending to influx server\n")
 		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
 		if err != nil {
 			log.Fatal(err)
@@ -185,13 +186,14 @@ func serialworker(sig chan *Packet) {
 		log.Fatal(err)
 	}
 	// Fixme : Handle Write eror
-	n, _ = s.Write([]byte("net mon\n"))
+	//n, _ = s.Write([]byte("net mon\n"))
 
 	buftotal := make([]byte, 1)
 	buf := make([]byte, 1024)
 
 	// <PAYLOAD:46575645523A303130343B434150413A303030343B4241544C45563A323636313B4157414B455F5345433A303B4D41494E5F4C4F4F503A303B4552524F523A303031323B4800; SMAC:00:00:00:00:00:00:00:25;LQI:120;RSSI:61>
 	r, _ := regexp.Compile("<PAYLOAD=[^>]+>\n")
+	doLog("Start reading UART, forever\n")
 	for {
 		n, _ = s.Read(buf)
 		if n > 0 {

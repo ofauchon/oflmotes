@@ -51,8 +51,8 @@
 #include "bmx280.h"
 
 
-#define DISABLE_RADIO_SLEEP 1
-#define DISABLE_POWERSAVE 1
+#define POWERSAVE_RADIO 1
+#define POWERSAVE_HIBERNATE 1
 
 char buflog[255];
 
@@ -250,8 +250,7 @@ void radio_off(void){
 
 int main (void)
 {
-
-#ifdef DISABLE_POWERSAVE
+#ifdef POWERSAVE_HIBERNATE
   pm_block(KINETIS_PM_STOP);
 #endif
 
@@ -261,7 +260,6 @@ int main (void)
 
   printf("\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\n");
   printf("*** OFlMotes Release %s\n", MOTESVERSION);
-
 
   // Hardware init contains i2c code that don't support Low Power Modes
   pm_block(KINETIS_PM_STOP);
@@ -309,7 +307,8 @@ int main (void)
         data_tx (buffer, strlen (buffer));
 
         printf("main : Radio OFF and Hibernate\n");
-#ifndef DISABLE_RADIO_SLEEP
+
+#ifdef POWERSAVE_RADIO
         radio_off();
 #endif
         xtimer_sleep(CYCLE_PAUSE_SEC);
@@ -317,6 +316,5 @@ int main (void)
         loop_cntr++; 
 
     }
-
 }
 

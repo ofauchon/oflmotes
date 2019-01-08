@@ -50,7 +50,9 @@
 #include "bmx280_params.h"
 #include "bmx280.h"
 
-// #define SWO
+
+#define DISABLE_RADIO_SLEEP 1
+#define DISABLE_POWERSAVE 1
 
 char buflog[255];
 
@@ -248,6 +250,11 @@ void radio_off(void){
 
 int main (void)
 {
+
+#ifdef DISABLE_POWERSAVE
+  pm_block(KINETIS_PM_STOP);
+#endif
+
   uint16_t loop_cntr=0; 
   LED0_OFF; 
   LED1_OFF; 
@@ -301,11 +308,10 @@ int main (void)
 
         data_tx (buffer, strlen (buffer));
 
-        //sprintf(buffer, "DEVICE:DEV;VER:01;CNT:%05d;BATLEV:%04d",loop_cntr, getBat() ); 
-        //data_tx (buffer, strlen (buffer));
-
         printf("main : Radio OFF and Hibernate\n");
-        //radio_off();
+#ifndef DISABLE_RADIO_SLEEP
+        radio_off();
+#endif
         xtimer_sleep(CYCLE_PAUSE_SEC);
 
         loop_cntr++; 

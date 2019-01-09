@@ -258,8 +258,10 @@ int main (void)
   LED0_OFF; 
   LED1_OFF; 
 
-  printf("\n*** OFlabs 802.15.4 OFLMote Sensor - Demo ***\n");
-  printf("*** OFlMotes Release %s\n", MOTESVERSION);
+  printf("\n*** OFlabs 802.15.4 OFLMote Sensor\n");
+  printf("Riot Version: %s\n", RIOTVERSION);
+  printf("Mote Version: %s\n", MOTESVERSION);
+  printf("Build   Date: %s\n", BUILDDATE);
 
   // Hardware init contains i2c code that don't support Low Power Modes
   pm_block(KINETIS_PM_STOP);

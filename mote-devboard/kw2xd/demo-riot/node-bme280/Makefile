@@ -43,9 +43,10 @@ CFLAGS += -DBMX280_PARAM_I2C_ADDR=0x76
 
 CFLAGS += -DNODE_ID=0x98
 CFLAGS += -DDEVELHELP -g
+RIOT_BUILD_VERSION := $(cd $(RIOTBASE); shell git log | head -n 1 | cut -d\  -f2 )
 MOTES_BUILD_VERSION := $(shell git log | head -n 1 | cut -d\  -f2 )
 BUILD_DATE := $(shell date  +%G%m%d_%H%M%S )
-CFLAGS += -DMOTESVERSION=\"git.$(MOTES_BUILD_VERSION).$(BUILD_DATE)\"
+CFLAGS += -DMOTESVERSION=\"git.$(MOTES_VERSION)\" -DRIOTVERSION=\"git.$(RIOT_VERSION)\" -DBUILDDATE=\"$(BUILD_DATE)\"
 
 OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
 #OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 

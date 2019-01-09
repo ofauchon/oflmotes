@@ -51,8 +51,8 @@
 #include "bmx280.h"
 
 
-#define POWERSAVE_RADIO 1
-#define POWERSAVE_HIBERNATE 1
+// #define POWERSAVE_RADIO
+// #define POWERSAVE_HIBERNATE
 
 char buflog[255];
 
@@ -264,14 +264,15 @@ int main (void)
   printf("Build   Date: %s\n", BUILDDATE);
 
   // Hardware init contains i2c code that don't support Low Power Modes
+#ifdef POWERSAVE_HIBERNATE
   pm_block(KINETIS_PM_STOP);
-  hw_init();
-  pm_unblock(KINETIS_PM_STOP);
+#endif
 
-  // i2c code that don't support Low Power Modes
-  // pm_block(KINETIS_PM_STOP);
-  // sensor_measure();
-  // pm_unblock(KINETIS_PM_STOP);
+  hw_init();
+
+#ifdef POWERSAVE_HIBERNATE
+  pm_unblock(KINETIS_PM_STOP);
+#endif
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)

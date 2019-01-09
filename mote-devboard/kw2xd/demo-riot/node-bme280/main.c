@@ -250,7 +250,8 @@ void radio_off(void){
 
 int main (void)
 {
-#ifdef POWERSAVE_HIBERNATE
+#ifndef POWERSAVE_HIBERNATE
+  // We use pm_block to lock powermodes
   pm_block(KINETIS_PM_STOP);
 #endif
 
@@ -263,16 +264,10 @@ int main (void)
   printf("Mote Version: %s\n", MOTESVERSION);
   printf("Build   Date: %s\n", BUILDDATE);
 
-  // Hardware init contains i2c code that don't support Low Power Modes
-#ifdef POWERSAVE_HIBERNATE
+  // i2c operations don't support Low Power Modes
   pm_block(KINETIS_PM_STOP);
-#endif
-
   hw_init();
-
-#ifdef POWERSAVE_HIBERNATE
   pm_unblock(KINETIS_PM_STOP);
-#endif
 
   char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)

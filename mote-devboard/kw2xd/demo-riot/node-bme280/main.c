@@ -51,13 +51,10 @@
 #include "bmx280.h"
 
 
-// #define POWERSAVE_RADIO
-// #define POWERSAVE_HIBERNATE
-
 char buflog[255];
 
 #define CYCLE_PAUSE_SEC 60
-#define UART_BUFSIZE        (128U)
+#define TX_BUFSIZE (128U)
 
 #ifndef NODE_ID
 #warn 'NODE_ID is undefined, defaulting to 0xFA'
@@ -66,13 +63,16 @@ char buflog[255];
 
 static kernel_pid_t ifpid = 0;
 
-
 /* Sensor variables */
 static bmx280_t bmx_dev;
 static int16_t temperature;
 static uint32_t pressure;
 static uint16_t humidity;
 
+static char tx_msg[TX_BUFSIZE];
+
+static uint8_t cnf_enable_pm_radiosleep=1;
+static uint8_t cnf_enable_pm_mcusleep=1;
 
 
 /*
@@ -88,11 +88,21 @@ static void sensor_measure(void){
         temperature = -temperature;
     }
 
+    if (cnf_enable_pm_mcusleep) {
+        //i2c not working in Low Power Modes
+        pm_block(KINETIS_PM_STOP);
+    }
+
     /* Get pressure in Pa */
     pressure = bmx280_read_pressure(&bmx_dev);
 
     /* Get pressure in %rH */
     humidity = bme280_read_humidity(&bmx_dev);
+
+    if (cnf_enable_pm_mcusleep) {
+        // Restore LPM
+        pm_unblock(KINETIS_PM_STOP);
+    }
 
     printf("sensor_measure : Sensor measure Done\n");
 }
@@ -137,24 +147,6 @@ static int data_tx (char *data, char data_sz)
 }
 
 
-
-/*
- * Wrapper to gnrc_netapi_set RIOT-OS 
- */
-static int netapi_set (kernel_pid_t pid, netopt_t opt, uint16_t context, void *data,
-	    size_t data_len)
-{
-  int ret;
-  ret = gnrc_netapi_set (pid, opt, context, data, data_len);
-  if (ret < 0)
-    {
-      printf ("!: netapi_set: Can't set option\r\n");
-    }
-  return ret;
-}
-
-
-
 /*
  * HW Initialisation
  */ 
@@ -163,6 +155,7 @@ static void hw_init (void)
   printf ("hw_init: Start\n");
 
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
+  int res;
 
   /* initialize Network */
   gnrc_netif_t *iff = NULL;
@@ -176,13 +169,18 @@ static void hw_init (void)
 
   printf ("hw_init: Switch to chan 11\n");
   int16_t val = 11;
-  netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val,
-	      sizeof (int16_t));
+  res=gnrc_netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val, sizeof (int16_t));
+  if (res<0){
+    printf ("hw_init: Can't switch to chan (err:%d)\n", res);
+  }
 
   // Set PAN to 0xF00D
   printf ("hw_init: Set pan to 0xF00D\n");
   val = 0xF00D;
-  netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
+  res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
+  if (res<0){
+    printf ("hw_init: Can't set PAN ID(err:%d)\n", res);
+  }
 
   // Set address
   printf ("hw_init: Set addr to 00:...:99\n");
@@ -196,8 +194,17 @@ static void hw_init (void)
     }
   else
     {
-      netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
+      gnrc_netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
+      res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
+      if (res<0){
+        printf ("hw_init: Can't set Network address(err:%d)\n", res);
+      }
     }
+
+  if (cnf_enable_pm_mcusleep) {
+     //i2c not working in LPM
+      pm_block(KINETIS_PM_STOP);
+  }
 
   // Sensor Init
   // Right now, I'm not sure i2c transactions are working under LLS power mode
@@ -209,6 +216,12 @@ static void hw_init (void)
   if (result == -2) {
       printf("hw_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
   }
+
+  if (cnf_enable_pm_mcusleep) {
+     //Restore LPM
+      pm_unblock(KINETIS_PM_STOP);
+  }
+
   printf ("hw_init: I2C Init Done\n");
   printf ("hw_init: All Done\n");
 
@@ -216,7 +229,7 @@ static void hw_init (void)
 
 /*
  * Use bandgap reference and ADC to measure board's voltage
- */
+ i2c operation dislikes LPM*/
 int getBat(void){
   // Enable bandgap reference for battery
   PMC->REGSC |= 1;
@@ -232,28 +245,33 @@ int getBat(void){
 
 void radio_on(void){
     netopt_state_t state;
-    state = NETOPT_STATE_IDLE;
-    gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+    gnrc_netapi_get(ifpid, NETOPT_STATE, 0, &state, sizeof(state));
+
+    if (state == NETOPT_STATE_OFF){
+        state = NETOPT_STATE_IDLE;
+        gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+    } else {
+        printf ("radio_on: !!! radio was NOT OFF (state =%d)\n",state);
+    }
  //   KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
 }
 
 void radio_off(void){
     netopt_state_t state;
-    state = NETOPT_STATE_OFF;
-    gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+    gnrc_netapi_get(ifpid, NETOPT_STATE, 0, &state, sizeof(state));
+
+    if (state != NETOPT_STATE_OFF){
+        state = NETOPT_STATE_OFF;
+        gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+    } else {
+        printf ("radio_off: !!! radio was already off (NETOPT_STATE_OFF)\n");
+    }
   //  KW2XDRF_GPIO->PCOR = (1 << KW2XDRF_RST_PIN);
 }
 
 
-
-
-
 int main (void)
 {
-#ifndef POWERSAVE_HIBERNATE
-  // We use pm_block to lock powermodes
-  pm_block(KINETIS_PM_STOP);
-#endif
 
   uint16_t loop_cntr=0; 
   LED0_OFF; 
@@ -263,37 +281,35 @@ int main (void)
   printf("Riot Version: %s\n", RIOTVERSION);
   printf("Mote Version: %s\n", MOTESVERSION);
   printf("Build   Date: %s\n", BUILDDATE);
+  printf("Powersave mcu sleep: %d\n", cnf_enable_pm_mcusleep);
+  printf("Powersave radio sleep: %d\n", cnf_enable_pm_radiosleep);
 
-  // i2c operations don't support Low Power Modes
-  pm_block(KINETIS_PM_STOP);
+  // This will definitly disable LPM as pm_layered lock counter 
+  // for state (KINETIS_PM_STOP) will never reach zero.
+  if (cnf_enable_pm_mcusleep) {
+    pm_block(KINETIS_PM_STOP);
+  }
+
   hw_init();
-  pm_unblock(KINETIS_PM_STOP);
 
-  char buffer[UART_BUFSIZE]; // Todo: move me 
   while (1)
     {
         printf("main : Start cycle\n");
 
+        // 
         uint8_t cnt; 
         for (cnt=0; cnt<4; cnt++){
             xtimer_usleep(200 * 1000); 
             LED0_TOGGLE;
         }
 
-
-        // Disable access to Low Power Modes .
-        // It seems i2c bus is not working in STOP modes (STOP/LLS)
-
-        // Measure sensor and transmit (no low power mode)
-        pm_block(KINETIS_PM_STOP);
         sensor_measure();
-        pm_unblock(KINETIS_PM_STOP);
 
-        // Enable Radio for TX
-        printf("main : Radio ON and TX data\n");
-        //radio_on();
+        if (cnf_enable_pm_radiosleep) {
+            radio_on();
+        }
 
-        sprintf(buffer, "DEVICE:DEV;VER:01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
+        sprintf(tx_msg, "DEVICE:DEV;VER:01;BATLEV:%d;TEMP:%c%02d.%02d;PRES:%04lu;HUMI:%02d.%02d", 
           getBat(),
           (temperature<0) ? '-' : '+',
           temperature/100,
@@ -302,13 +318,14 @@ int main (void)
           humidity/100, 
           humidity%100);
 
-        data_tx (buffer, strlen (buffer));
+        data_tx (tx_msg, strlen (tx_msg));
 
         printf("main : Radio OFF and Hibernate\n");
 
-#ifdef POWERSAVE_RADIO
-        radio_off();
-#endif
+        if (cnf_enable_pm_radiosleep) {
+            radio_off();
+        }
+
         xtimer_sleep(CYCLE_PAUSE_SEC);
 
         loop_cntr++; 

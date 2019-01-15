@@ -81,16 +81,16 @@ static uint8_t cnf_enable_pm_mcusleep=1;
 static void sensor_measure(void){
     printf("sensor_measure: Starting measures\n");
 
+    if (cnf_enable_pm_mcusleep) {
+        //i2c not working in Low Power Modes
+        pm_block(KINETIS_PM_STOP);
+    }
+
     /* Get temperature in centi degrees Celsius */
     temperature = bmx280_read_temperature(&bmx_dev);
     bool negative = (temperature < 0);
     if (negative) {
         temperature = -temperature;
-    }
-
-    if (cnf_enable_pm_mcusleep) {
-        //i2c not working in Low Power Modes
-        pm_block(KINETIS_PM_STOP);
     }
 
     /* Get pressure in Pa */
@@ -148,11 +148,11 @@ static int data_tx (char *data, char data_sz)
 
 
 /*
- * HW Initialisation
+ * Configure 802.15.4 networking
  */ 
-static void hw_init (void)
+static void net_config (void)
 {
-  printf ("hw_init: Start\n");
+  printf ("net_config: Start\n");
 
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
   int res;
@@ -162,44 +162,51 @@ static void hw_init (void)
   iff = gnrc_netif_iter (iff);
   if (iff == NULL)
     {
-      printf ("hw_init: ERROR : NO INTERFACE\n");
+      printf ("net_config: ERROR : NO INTERFACE\n");
       return;
     }
   ifpid = iff->pid;
 
-  printf ("hw_init: Switch to chan 11\n");
+  printf ("net_config: Switch to chan 11\n");
   int16_t val = 11;
   res=gnrc_netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val, sizeof (int16_t));
   if (res<0){
-    printf ("hw_init: Can't switch to chan (err:%d)\n", res);
+    printf ("net_config: Can't switch to chan (err:%d)\n", res);
   }
 
   // Set PAN to 0xF00D
-  printf ("hw_init: Set pan to 0xF00D\n");
+  printf ("net_config: Set pan to 0xF00D\n");
   val = 0xF00D;
   res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
   if (res<0){
-    printf ("hw_init: Can't set PAN ID(err:%d)\n", res);
+    printf ("net_config: Can't set PAN ID(err:%d)\n", res);
   }
 
   // Set address
-  printf ("hw_init: Set addr to 00:...:99\n");
+  printf ("net_config: Set addr to 00:...:99\n");
   char src[24];
   sprintf(src, "00:00:00:00:00:00:00:%02x", NODE_ID);
 
   size_t addr_len = gnrc_netif_addr_from_str (src, out);
   if (addr_len == 0)
     {
-      printf ("hw_init: Unable to parse address !!!\n");
+      printf ("net_config: Unable to parse address !!!\n");
     }
   else
     {
       gnrc_netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
       res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
       if (res<0){
-        printf ("hw_init: Can't set Network address(err:%d)\n", res);
+        printf ("net_config: Can't set Network address(err:%d)\n", res);
       }
     }
+}
+
+/*
+ * Configure sensors
+ */ 
+static void sensors_config (void) {
+  printf ("sensors_init: Starting\n");
 
   if (cnf_enable_pm_mcusleep) {
      //i2c not working in LPM
@@ -210,11 +217,11 @@ static void hw_init (void)
   // Right now, I'm not sure i2c transactions are working under LLS power mode
   int result = bmx280_init(&bmx_dev, &bmx280_params[0]);
   if (result == -1) {
-      printf("hw_init: ERROR: The given i2c is not enabled\r\n");
+      printf("sensors_init: ERROR: The given i2c is not enabled\r\n");
   }
 
   if (result == -2) {
-      printf("hw_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
+      printf("sensors_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
   }
 
   if (cnf_enable_pm_mcusleep) {
@@ -222,8 +229,7 @@ static void hw_init (void)
       pm_unblock(KINETIS_PM_STOP);
   }
 
-  printf ("hw_init: I2C Init Done\n");
-  printf ("hw_init: All Done\n");
+  printf ("sensors_init: All Done\n");
 
 }
 
@@ -248,12 +254,16 @@ void radio_on(void){
     gnrc_netapi_get(ifpid, NETOPT_STATE, 0, &state, sizeof(state));
 
     if (state == NETOPT_STATE_OFF){
+        printf("radio_on: Radio was off as expected;enable RST_PIN, and reset PHY through STATE_RESET\n");
+        KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
+        state = NETOPT_STATE_RESET;
+        gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
         state = NETOPT_STATE_IDLE;
         gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        net_config();
     } else {
         printf ("radio_on: !!! radio was NOT OFF (state =%d)\n",state);
     }
- //   KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
 }
 
 void radio_off(void){
@@ -266,7 +276,7 @@ void radio_off(void){
     } else {
         printf ("radio_off: !!! radio was already off (NETOPT_STATE_OFF)\n");
     }
-  //  KW2XDRF_GPIO->PCOR = (1 << KW2XDRF_RST_PIN);
+   KW2XDRF_GPIO->PCOR = (1 << KW2XDRF_RST_PIN);
 }
 
 
@@ -286,17 +296,17 @@ int main (void)
 
   // This will definitly disable LPM as pm_layered lock counter 
   // for state (KINETIS_PM_STOP) will never reach zero.
-  if (cnf_enable_pm_mcusleep) {
+  if (cnf_enable_pm_mcusleep == 0) {
     pm_block(KINETIS_PM_STOP);
   }
 
-  hw_init();
+  net_config();
+  sensors_config();
 
   while (1)
     {
-        printf("main : Start cycle\n");
+        printf("\n\nmain : Start cycle\n");
 
-        // 
         uint8_t cnt; 
         for (cnt=0; cnt<4; cnt++){
             xtimer_usleep(200 * 1000); 
@@ -320,8 +330,18 @@ int main (void)
 
         data_tx (tx_msg, strlen (tx_msg));
 
-        printf("main : Radio OFF and Hibernate\n");
+        // Quick blink and block cpu if button is press
+        // So we can debug or reflash 
+        LED1_ON;
+        xtimer_usleep(500 * 1000); 
+        LED1_OFF;
+        if (!gpio_read(BTN0_PIN) ||  !gpio_read(BTN1_PIN) ) {
+            gpio_set(LED0_PIN);
+            gpio_set(LED1_PIN);
+            while(1){}
+        }
 
+        printf("main : Radio OFF and Hibernate\n");
         if (cnf_enable_pm_radiosleep) {
             radio_off();
         }

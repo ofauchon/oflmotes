@@ -21,23 +21,23 @@ var cnf_daemon bool
 var logfile *os.File
 
 func doLog(format string, a ...interface{}) {
-	out := os.Stdout
 	t := time.Now()
-	var err error
-	if cnf_logfile != "" {
-		if logfile == nil {
-			fmt.Printf("Creating log file '%s'\n", cnf_logfile)
-			logfile, err = os.OpenFile(cnf_logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				//		out = bufio.NewWriter(f)
-				log.Fatal(err)
-			}
+
+	if cnf_logfile != ""  && logfile == os.Stdout {
+		fmt.Printf("INFO: Creating log file '%s'\n", cnf_logfile)
+		tf, err := os.OpenFile(cnf_logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Printf("ERROR: Can't open log file '%s' for writing, logging to Stdout\n", cnf_logfile)
+			fmt.Printf("ERROR: %s\n", err)
+		} else {
+			fmt.Printf("INFO: log file '%s' is ready for writing\n", cnf_logfile)
+			logfile=tf
 		}
-		out = logfile
 	}
 
-	fmt.Fprintf(out, "%s ", string(t.Format("20060102 150405")))
-	fmt.Fprintf(out, format, a...)
+	// logfile default is os.Stdout 
+	fmt.Fprintf(logfile, "%s ", string(t.Format("20060102 150405")))
+	fmt.Fprintf(logfile, format, a...)
 }
 
 type Packet struct {
@@ -86,9 +86,10 @@ func decode_packet(p *Packet) {
 		}
 	}
 
-	k, err := hex.DecodeString(p.payload) // Skip header (macs)
+	k, err := hex.DecodeString(p.payload)
 	if err != nil {
-		log.Fatal(err)
+		doLog("ERROR: Can't decode HEX payload '%s'\n", p.payload)
+		return
 	}
 	p.payload = string(k)
 
@@ -124,7 +125,7 @@ func push_influx(p *Packet) {
 		Password: influx_pass,
 	})
 	if err != nil {
-		log.Fatal(err)
+		doLog("ERROR: Can't create HTTP client to influxdb\n")
 	}
 
 	// Create a new point batch
@@ -133,7 +134,7 @@ func push_influx(p *Packet) {
 		Precision: "s",
 	})
 	if err != nil {
-		log.Fatal(err)
+		doLog("ERROR: Can't create batchpoint\n")
 	}
 
 	// Create a point and add to batch
@@ -142,22 +143,22 @@ func push_influx(p *Packet) {
 	p.datamap["LQI"] = p.lqi
 	fields := p.datamap
 
-/*
-	for k, v := range p.datamap {
-		doLog("Dump_send_influx: key/values: '%s' value: '%v'\n", k, v)
-	}
-*/
+	/*
+		for k, v := range p.datamap {
+			doLog("Dump_send_influx: key/values: '%s' value: '%v'\n", k, v)
+		}
+	*/
 	if len(p.datamap) > 0 {
-//		doLog("Sending to influx server\n")
+		//		doLog("Sending to influx server\n")
 		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
 		if err != nil {
-			log.Fatal(err)
+			doLog("ERROR: Can't create InfluxDB points\n")
 		}
 		bp.AddPoint(pt)
 	}
 	// Write the batch
 	if err := c.Write(bp); err != nil {
-		log.Fatal(err)
+		doLog("ERROR: Can't send batch\n")
 	}
 
 }
@@ -226,15 +227,16 @@ func parseArgs() {
 	flag.BoolVar(&cnf_daemon, "daemon", false, "Run in background")
 	flag.Parse()
 
-	doLog("InfluxDB backend: Url:%s Db:%s\n", influx_url, influx_db)
-	doLog("InfluxDB backend: User:%s Pass:<hidden>\n", influx_user)
+	doLog("Conf : InfluxDB backend: Url:%s Db:%s\n", influx_url, influx_db)
+	doLog("Conf : InfluxDB backend: User:%s Pass:<hidden>\n", influx_user)
 
 }
 
 func main() {
 
-	doLog("OLFmotes gateway \n")
+	logfile=os.Stdout
 	parseArgs()
+	doLog("Starting OLFmotes gateway \n")
 
 	// Inter routines communicatin
 	signals := make(chan *Packet)

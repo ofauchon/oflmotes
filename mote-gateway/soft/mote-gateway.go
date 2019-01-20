@@ -125,7 +125,7 @@ func push_influx(p *Packet) {
 		Password: influx_pass,
 	})
 	if err != nil {
-		doLog("ERROR: Can't create HTTP client to influxdb\n")
+		doLog("ERROR: Can't create HTTP client to influxdb :%s\n", err)
 	}
 
 	// Create a new point batch
@@ -134,7 +134,7 @@ func push_influx(p *Packet) {
 		Precision: "s",
 	})
 	if err != nil {
-		doLog("ERROR: Can't create batchpoint\n")
+		doLog("ERROR: Can't create batchpoint : %s\n", err)
 	}
 
 	// Create a point and add to batch
@@ -152,13 +152,13 @@ func push_influx(p *Packet) {
 		//		doLog("Sending to influx server\n")
 		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
 		if err != nil {
-			doLog("ERROR: Can't create InfluxDB points\n")
+			doLog("ERROR: Can't create InfluxDB points: %s\n", err)
 		}
 		bp.AddPoint(pt)
 	}
 	// Write the batch
 	if err := c.Write(bp); err != nil {
-		doLog("ERROR: Can't send batch\n")
+		doLog("ERROR: Can't send batch '%s'\n", err)
 	}
 
 }

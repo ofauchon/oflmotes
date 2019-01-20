@@ -123,10 +123,13 @@ func push_influx(p *Packet) {
 		Addr:     influx_url,
 		Username: influx_user,
 		Password: influx_pass,
+		Timeout: 10 * time.Second,
+
 	})
 	if err != nil {
 		doLog("ERROR: Can't create HTTP client to influxdb :%s\n", err)
 	}
+	defer c.Close()
 
 	// Create a new point batch
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{

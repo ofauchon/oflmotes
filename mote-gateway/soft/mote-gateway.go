@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -23,7 +24,7 @@ var logfile *os.File
 func doLog(format string, a ...interface{}) {
 	t := time.Now()
 
-	if cnf_logfile != ""  && logfile == os.Stdout {
+	if cnf_logfile != "" && logfile == os.Stdout {
 		fmt.Printf("INFO: Creating log file '%s'\n", cnf_logfile)
 		tf, err := os.OpenFile(cnf_logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -31,11 +32,11 @@ func doLog(format string, a ...interface{}) {
 			fmt.Printf("ERROR: %s\n", err)
 		} else {
 			fmt.Printf("INFO: log file '%s' is ready for writing\n", cnf_logfile)
-			logfile=tf
+			logfile = tf
 		}
 	}
 
-	// logfile default is os.Stdout 
+	// logfile default is os.Stdout
 	fmt.Fprintf(logfile, "%s ", string(t.Format("20060102 150405")))
 	fmt.Fprintf(logfile, format, a...)
 }
@@ -47,10 +48,12 @@ type Packet struct {
 	payload    string
 	lqi, rssi  int64
 	datamap    map[string]interface{}
+	timestamp  time.Time
 }
 
 func dump_packet(p *Packet) {
 	//doLog("Dump: Raw:'%s'\n", hex.Dump( []byte(p.raw)  ) );
+	doLog("Dump: Timestamp:'%s'\n", p.timestamp)
 	doLog("Dump: Payload:'%s'\n", p.payload)
 	doLog("Dump: Smac:'%s' Dmac: '%s'\n", p.smac, p.dmac)
 	//doLog("Dump: Span:'%s' Dpan: '%s'\n", p.span, p.dpan)
@@ -117,51 +120,59 @@ func decode_packet(p *Packet) {
 
  */
 
-func push_influx(p *Packet) {
+func push_influx(ps *list.List) {
 	// Create a new HTTPClient
 	c, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr:     influx_url,
 		Username: influx_user,
 		Password: influx_pass,
-		Timeout: 10 * time.Second,
-
+		Timeout:  10 * time.Second,
 	})
 	if err != nil {
 		doLog("ERROR: Can't create HTTP client to influxdb :%s\n", err)
 	}
 	defer c.Close()
 
-	// Create a new point batch
-	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  influx_db,
-		Precision: "s",
-	})
-	if err != nil {
-		doLog("ERROR: Can't create batchpoint : %s\n", err)
-	}
+	doLog("Buffer contains %d elements\n", ps.Len())
+	for ps.Len() > 0 {
+		// Get First In, and remove it
+		e := ps.Front()
+		p := e.Value.(*Packet)
+		dump_packet(p)
 
-	// Create a point and add to batch
-	tags := map[string]string{"ID": p.smac}
-	p.datamap["RSSI"] = p.rssi
-	p.datamap["LQI"] = p.lqi
-	fields := p.datamap
-
-	/*
-		for k, v := range p.datamap {
-			doLog("Dump_send_influx: key/values: '%s' value: '%v'\n", k, v)
-		}
-	*/
-	if len(p.datamap) > 0 {
-		//		doLog("Sending to influx server\n")
-		pt, err := client.NewPoint("metrics", tags, fields, time.Now())
+		// Create a new point batch
+		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
+			Database:  influx_db,
+			Precision: "s",
+		})
 		if err != nil {
-			doLog("ERROR: Can't create InfluxDB points: %s\n", err)
+			doLog("ERROR: Can't create batchpoint : %s\n", err)
+			return
 		}
-		bp.AddPoint(pt)
-	}
-	// Write the batch
-	if err := c.Write(bp); err != nil {
-		doLog("ERROR: Can't send batch '%s'\n", err)
+
+		// Create a point and add to batch
+		tags := map[string]string{"ID": p.smac}
+		p.datamap["RSSI"] = p.rssi
+		p.datamap["LQI"] = p.lqi
+		fields := p.datamap
+
+		if len(p.datamap) > 0 {
+			//		doLog("Sending %d metrics to influx server\n", len(p.datamap) )
+			pt, err := client.NewPoint("metrics", tags, fields, p.timestamp)
+			if err != nil {
+				doLog("ERROR: Can't create InfluxDB points: %s\n", err)
+				return
+			}
+			bp.AddPoint(pt)
+		}
+		// Write the batch
+		if err := c.Write(bp); err != nil {
+			doLog("ERROR: Can't send batch '%s'\n", err)
+			return
+		}
+		doLog("Transmission OK\n")
+
+		ps.Remove(e)
 	}
 
 }
@@ -208,7 +219,8 @@ func serialworker(sig chan *Packet) {
 				//		fmt.Println("OK\n")
 
 				pkt := Packet{
-					raw: (string)(buftotal[m[0]+1 : m[1]-2]),
+					raw:       (string)(buftotal[m[0]+1 : m[1]-2]),
+					timestamp: time.Now(),
 				}
 				buftotal = buftotal[m[1]:]
 
@@ -237,7 +249,7 @@ func parseArgs() {
 
 func main() {
 
-	logfile=os.Stdout
+	logfile = os.Stdout
 	parseArgs()
 	doLog("Starting OLFmotes gateway \n")
 
@@ -247,12 +259,15 @@ func main() {
 	// Deal with serial in a job !
 	go serialworker(signals)
 
+	var p *Packet
+	ps := list.New()
 	// Loop until someting happens
 	for {
-		p := <-signals
+		p = <-signals
 		decode_packet(p)
-		dump_packet(p)
-		push_influx(p)
+		ps.PushBack(p)
+
+		push_influx(ps)
 	}
 
 }

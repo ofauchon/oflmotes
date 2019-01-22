@@ -50,6 +50,7 @@
 #include "bmx280_params.h"
 #include "bmx280.h"
 
+#include "kw2xrf.h"
 
 char buflog[255];
 
@@ -200,6 +201,14 @@ static void net_config (void)
         printf ("net_config: Can't set Network address(err:%d)\n", res);
       }
     }
+
+  // Set Max TX Power
+  printf ("net_config: Set tx_power to max\n");
+  val = KW2XDRF_OUTPUT_POWER_MAX;
+  res=gnrc_netapi_set (iff->pid, NETOPT_TX_POWER, 0, (int16_t *) & val, sizeof (int16_t));
+  if (res<0){
+    printf ("net_config: Can't set PAN ID(err:%d)\n", res);
+  }
 }
 
 /*

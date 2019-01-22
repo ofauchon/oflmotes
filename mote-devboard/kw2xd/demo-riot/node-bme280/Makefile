@@ -61,5 +61,5 @@ trace:
 
 
 picocom:   
-	picocom /dev/ttyUSB0 --baud 115200  --imap crcrlf,lfcrlf
+	picocom /dev/ttyUSB0 --baud 115200  --imap crcrlf,lfcrlf --logfile picocom.log
 

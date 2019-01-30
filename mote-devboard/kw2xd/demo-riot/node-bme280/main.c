@@ -265,10 +265,13 @@ void radio_on(void){
     if (state == NETOPT_STATE_OFF){
         printf("radio_on: Radio was off as expected;enable RST_PIN, and reset PHY through STATE_RESET\n");
         KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
+        // We resetted the modem with RST_PIN, so we use NETOPT RESET STATE to run kw2xrf initialisation again
         state = NETOPT_STATE_RESET;
         gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        // Now modem is resetted, we switch to IDLE STATE 
         state = NETOPT_STATE_IDLE;
         gnrc_netapi_set (ifpid, NETOPT_STATE, 0, &state , sizeof (state));
+        // Set radio channel, power, pan ... etc 
         net_config();
     } else {
         printf ("radio_on: !!! radio was NOT OFF (state =%d)\n",state);
@@ -296,6 +299,12 @@ int main (void)
   LED0_OFF; 
   LED1_OFF; 
 
+  uint8_t cnt; 
+  for (cnt=0; cnt<4; cnt++){
+    LED0_TOGGLE;
+    xtimer_usleep(200 * 1000); 
+  }
+
   printf("\n*** OFlabs 802.15.4 OFLMote Sensor\n");
   printf("Riot Version: %s\n", RIOTVERSION);
   printf("Mote Version: %s\n", MOTESVERSION);
@@ -303,6 +312,7 @@ int main (void)
   printf("Powersave mcu sleep: %d\n", cnf_enable_pm_mcusleep);
   printf("Powersave radio sleep: %d\n", cnf_enable_pm_radiosleep);
 
+  // We don't want to use MCU sleep mode ...
   // This will definitly disable LPM as pm_layered lock counter 
   // for state (KINETIS_PM_STOP) will never reach zero.
   if (cnf_enable_pm_mcusleep == 0) {
@@ -316,11 +326,6 @@ int main (void)
     {
         printf("\n\nmain : Start cycle\n");
 
-        uint8_t cnt; 
-        for (cnt=0; cnt<4; cnt++){
-            xtimer_usleep(200 * 1000); 
-            LED0_TOGGLE;
-        }
 
         sensor_measure();
 
@@ -345,8 +350,8 @@ int main (void)
         xtimer_usleep(500 * 1000); 
         LED1_OFF;
         if (!gpio_read(BTN0_PIN) ||  !gpio_read(BTN1_PIN) ) {
-            gpio_set(LED0_PIN);
-            gpio_set(LED1_PIN);
+            LED0_ON;
+            LED1_ON;
             while(1){}
         }
 

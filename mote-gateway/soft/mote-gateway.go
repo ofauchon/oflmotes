@@ -213,6 +213,7 @@ func serialworker(sig chan *Packet) {
 		n, _ = s.Read(buf)
 		if n > 0 {
 			buftotal = append(buftotal, buf[:n]...)
+			doLog("Serial: Read %d bytes [%s]\n", n, buftotal );
 
 			m := r.FindIndex(buftotal)
 			if m != nil {

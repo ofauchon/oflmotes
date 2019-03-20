@@ -78,6 +78,9 @@ static char tx_msg[TX_BUFSIZE];
  */
 static int data_tx (char *data, char data_sz)
 {
+  //uint8_t flags = 0 | GNRC_NETIF_HDR_FLAGS_BROADCAST;
+  uint8_t flags = 0x00;
+
   printf("data_tx: [%s]\n", data);
   if (data_sz>45){
     printf("data_tx : WARN ! Payload size > 45, TX maix FAIL !\n");
@@ -87,6 +90,7 @@ static int data_tx (char *data, char data_sz)
   uint8_t dst[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 
   gnrc_pktsnip_t *pkt, *hdr;
+  gnrc_netif_hdr_t *nethdr;
 
   // put packet together 
   pkt = gnrc_pktbuf_add (NULL, data, data_sz, GNRC_NETTYPE_UNDEF);
@@ -104,6 +108,9 @@ static int data_tx (char *data, char data_sz)
       return 1;
     }
   LL_PREPEND (pkt, hdr);
+  nethdr = (gnrc_netif_hdr_t *)hdr->data;
+  nethdr->flags = flags;
+
   // and send it 
   if (gnrc_netapi_send (ifpid, pkt) < 1)
     {
@@ -241,11 +248,7 @@ void radio_off(void){
 int main (void)
 {
 
-/*  msg_t inbox[8]; */
-
   uint16_t loop_cntr=0; 
-
-
 
   /* Startup blink led */
   LED0_OFF; 
@@ -271,32 +274,31 @@ int main (void)
   
   while (1)
     {
-        PM_BLOCK(KINETIS_PM_STOP);
-
-        printf("\n\nmain : Start cycle\n");
+        printf("main : Start cycle\n");
         bzero(tx_msg, sizeof(tx_msg) );
 
-        /* Keep CPU on and Wait 10s 
-           for Teleinfo RX */
-        printf("\n\nmain : Listening to teleinfo frames for %d secs\n", TELEINFO_LISTEN_SEC);
+        PM_BLOCK(KINETIS_PM_STOP); // Disable LowPower
+
+        printf("main : Listening Teleinfo\n");
         teleinfo_enable_rx();
         LED0_ON;
-        xtimer_usleep(TELEINFO_LISTEN_SEC * 1000000);
+        xtimer_sleep(TELEINFO_LISTEN_SEC);
         LED0_OFF;
         teleinfo_disable_rx();
-        printf("\n\nmain : Stop listening to teleinfo frames \n");
+        printf("main : Stop listening Teleinfo\n");
 
         // Send metrics
         radio_on();
 
         // Common metrics
-        sprintf(tx_msg, "D:TINFO;V:01;BATLEV:%d;LOOP:%d", getBat(), loop_cntr );
+        sprintf(tx_msg, "D:TI01;BL:%d;L:%d", getBat(), loop_cntr );
         data_tx(tx_msg, strlen (tx_msg));
 
 
         // Check if we have new messages.
         while (msg_try_receive(&m) == 1 ){
           if (m.sender_pid ==  teleinfo_pid) {
+            printf("main: new msg from teleinfo\n");
             //printf("Message received in main from pid: %d: [%s]\n",  m.sender_pid, (char*) m.content.ptr);
             bzero(tx_msg, sizeof(tx_msg) );
             memcpy(tx_msg, m.content.ptr, strlen(m.content.ptr) );
@@ -305,21 +307,19 @@ int main (void)
         }
 
 
-        // Send datas
-        //data_tx (tx_msg, strlen (tx_msg));
-
 
         printf("main : Hibernate\n");
-        //radio_off();
+        radio_off();
         /* Press any button to lock MCU in Run mode
            ... so we can connect with debugger */
+        /*
         if (!gpio_read(BTN0_PIN) ||  !gpio_read(BTN1_PIN) ) {
             LED0_ON;
             LED1_ON;
             while(1){}
-        }
+        }*/
 
-        PM_UNBLOCK(KINETIS_PM_STOP); 
+        PM_UNBLOCK(KINETIS_PM_STOP); // Re-enable LPM 
         xtimer_sleep(CYCLE_PAUSE_SEC);
 
         loop_cntr++; 

@@ -105,13 +105,13 @@ void *teleinfo_run(void *arg)
     msg_init_queue(msg_queue, 8);
 
     while (1) {
-        DEBUG("teleinfo_run: Wait for message\n");
+        DEBUG("teleinfo: Wait for teleinfo frame\n");
         msg_receive(&msg);
         uart_t dev = (uart_t)msg.content.value;
         bzero (buffer, sizeof (buffer));
         ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
 
-        printf("teleinfo_run: UART_DEV(%i) RX: [%s]\n", dev, buffer);
+        DEBUG("teleinfo: UART%d RX: [%s]\n", dev, buffer);
 
         //'BASE 014038982 .'
         if (strncmp (buffer, "BASE", 4) == 0 && strlen (buffer) >= 14)
@@ -135,10 +135,11 @@ void *teleinfo_run(void *arg)
         // Check if we have complete sequence (PAPP + BASE + IINST) on every UART
         uint8_t  k=0; 
         for (k=0; k<UART_NUMOF; k++){        
-                DEBUG ( "DBG => [PAPP%d:%i;BASE%d:%li;IINST%d:%i]\n",
-                k, results[k].papp,
-                k, results[k].base,
-                k, results[k].iinst);
+                DEBUG("teleinfo: UART%d :[PAPP:%i;BASE:%li;IINST:%i]\n",
+                k,
+                results[k].papp,
+                results[k].base,
+                results[k].iinst);
 
             if (results[k].papp > 0 && results[k].iinst > 0 && results[k].base > 0)
             {
@@ -148,27 +149,27 @@ void *teleinfo_run(void *arg)
                 k, results[k].base,
                 k, results[k].iinst);
 
-
-            results[k].papp = results[k].base = results[k].iinst = 0; 
+                DEBUG("teleinfo: append metrics [%s]", msg_buf);
+                results[k].papp = results[k].base = results[k].iinst = 0; 
             }
         }
 
         /* Great! We have something to send to main thread */
-        if (msg_buf[0] >0){
-            printf ("teleinfo_run: message '%s' will be sent to main \n", msg_buf);
+        if (strlen(msg_buf) >0){
+            DEBUG("teleinfo: '%s' will be sent to main \n", msg_buf);
                 
             msg_t msg;
             msg.content.ptr = (void*) msg_buf;
             msg_send (&msg, main_pid);
 
 
-            printf("teleinfo_run: stop RX and sleep\n");
+            DEBUG("teleinfo: stop RX and sleep\n");
             rxen=0;
             thread_sleep();
 
             bzero (msg_buf, sizeof (msg_buf));
             rxen=1;
-            printf("teleinfo_run: wake up\n");
+            printf("teleinfo: wake up\n");
  
         
         }
@@ -188,12 +189,11 @@ void *teleinfo_run(void *arg)
  */
 kernel_pid_t teleinfo_init(kernel_pid_t pid ){
 
-    printf("teleinfo_init() Start\n");
+    printf("teleinfo: init\n");
 
     // We use PTE3 to power Teleinfo
     gpio_init(TELEINFO_POWER_PORT, GPIO_OUT);
     gpio_clear(TELEINFO_POWER_PORT);
-
 
     main_pid=pid; 
     rxen=0;
@@ -208,19 +208,19 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
 
     /* initialize UART */
     int res;
-    int dev=1;
+    int uart_dev=1;
     //uint32_t baud=115200; 
     uint32_t baud=1200; 
-    res = uart_init(UART_DEV(1), baud, teleinfo_rx_cb, (void *)dev);
+    res = uart_init(UART_DEV(uart_dev), baud, teleinfo_rx_cb, (void *)uart_dev);
     if (res == UART_NOBAUD) {
-        printf("teleinfo_init: Given baudrate (%u) not possible\n", (unsigned int)baud);
+        printf("teleinfo: Given baudrate (%u) not possible\n", (unsigned int)baud);
         return 0;
     }
     else if (res != UART_OK) {
-        puts("teleinfo_init: Unable to initialize UART device\n");
+        printf("teleinfo: Unable to initialize UART device\n");
         return 0;
     }
-    DEBUG("teleinfo_init: Successfully initialized UART_DEV(%i)\n", dev);
+    printf("teleinfo: Successfully initialized UART_DEV(%i)\n", uart_dev);
 
 
     /* start the printer thread */
@@ -229,5 +229,4 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
 
 return teleinfo_pid; 
 
- 
 }

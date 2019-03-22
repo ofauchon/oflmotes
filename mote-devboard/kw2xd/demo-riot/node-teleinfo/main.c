@@ -71,8 +71,6 @@ static kernel_pid_t teleinfo_pid;
 static char tx_msg[TX_BUFSIZE];
 
 
-
-
 /*
  * Send 802.16.4 frame 
  */
@@ -271,7 +269,7 @@ int main (void)
   msg_t msg_queue[8];
   msg_init_queue(msg_queue, 8);
   msg_t m;
-  
+
   while (1)
     {
         printf("main : Start cycle\n");
@@ -291,9 +289,9 @@ int main (void)
         radio_on();
 
         // Common metrics
-        sprintf(tx_msg, "D:TI01;BL:%d;L:%d", getBat(), loop_cntr );
+        sprintf(tx_msg, "FWRV:01;BATL:%d;LOOP:%d", getBat(), loop_cntr );
         data_tx(tx_msg, strlen (tx_msg));
-
+        xtimer_sleep(1);
 
         // Check if we have new messages.
         while (msg_try_receive(&m) == 1 ){
@@ -303,6 +301,7 @@ int main (void)
             bzero(tx_msg, sizeof(tx_msg) );
             memcpy(tx_msg, m.content.ptr, strlen(m.content.ptr) );
             data_tx(tx_msg, strlen(tx_msg));
+            xtimer_sleep(1);
           } 
         }
 

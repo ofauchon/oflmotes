@@ -11,7 +11,7 @@
 #include "teleinfo.h"
 
 
-#define ENABLE_DEBUG  (0)
+#define ENABLE_DEBUG  (1)
 #include "debug.h"
 
 
@@ -54,10 +54,10 @@ void teleinfo_rx_cb (void *arg, uint8_t data)
     if (rxen){
         uart_t dev = (uart_t) arg;
         data &= 0x7F;
-        DEBUG("rxcb: %02x \n", data);
+        //DEBUG("rxcb: %02x \n", data);
         if (data == '\n')
         {
-            DEBUG("rxcb: '\\n' detected\n");
+            //DEBUG("rxcb: '\\n' detected\n");
             msg_t msg;
             msg.content.value = (uint32_t) dev;
             msg_send (&msg, teleinfo_pid);
@@ -107,6 +107,7 @@ void *teleinfo_run(void *arg)
     while (1) {
         DEBUG("teleinfo: Wait for teleinfo frame\n");
         msg_receive(&msg);
+        LED1_TOGGLE;
         uart_t dev = (uart_t)msg.content.value;
         bzero (buffer, sizeof (buffer));
         ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
@@ -149,7 +150,7 @@ void *teleinfo_run(void *arg)
                 k, results[k].base,
                 k, results[k].iinst);
 
-                DEBUG("teleinfo: append metrics [%s]", msg_buf);
+                DEBUG("teleinfo: append metrics [%s]\n", msg_buf);
                 results[k].papp = results[k].base = results[k].iinst = 0; 
             }
         }
@@ -165,6 +166,7 @@ void *teleinfo_run(void *arg)
 
             DEBUG("teleinfo: stop RX and sleep\n");
             rxen=0;
+            LED1_OFF;
             thread_sleep();
 
             bzero (msg_buf, sizeof (msg_buf));
@@ -211,7 +213,7 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
     int uart_dev=1;
     //uint32_t baud=115200; 
     uint32_t baud=1200; 
-    res = uart_init(UART_DEV(uart_dev), baud, teleinfo_rx_cb, (void *)uart_dev);
+    res = uart_init(UART_DEV(1), baud, teleinfo_rx_cb, (void *)uart_dev);
     if (res == UART_NOBAUD) {
         printf("teleinfo: Given baudrate (%u) not possible\n", (unsigned int)baud);
         return 0;

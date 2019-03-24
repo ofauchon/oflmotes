@@ -18,12 +18,16 @@
 char buffer[UART_BUFSIZE];
 char msg_buf[UART_BUFSIZE];
 
+#define  BASE_DONE (1 >>0 ) 
+#define  PAPP_DONE (1 >>1 ) 
+#define  IINST_DONE (1 >>2 ) 
 
 typedef struct
 {
   int16_t papp;
   int16_t iinst;
   int32_t base;
+  uint8_t state;
 } results_t;
 results_t results[UART_NUMOF];
 
@@ -119,18 +123,21 @@ void *teleinfo_run(void *arg)
         {
             buffer[14] = 0;
             results[dev].base = atoi (buffer + 5);
+            results[dev].state |= BASE_DONE ; 
         }
         //'PAPP 02340 *'
         else if (strncmp (buffer, "PAPP", 4) == 0 && strlen (buffer) >= 10)
         {
             buffer[10] = 0;
             results[dev].papp = atoi (buffer + 5);
+            results[dev].state |= PAPP_DONE ;
         }
         //'IINST 010 X'
         else if (strncmp (buffer, "IINST", 5) == 0 && strlen (buffer) >= 9)
         {
             buffer[9] = 0;
             results[dev].iinst = atoi (buffer + 6);
+            results[dev].state |= IINST_DONE ;
         }
 
         // Check if we have complete sequence (PAPP + BASE + IINST) on every UART
@@ -142,7 +149,7 @@ void *teleinfo_run(void *arg)
                 results[k].base,
                 results[k].iinst);
 
-            if (results[k].papp > 0 && results[k].iinst > 0 && results[k].base > 0)
+            if (results[k].state == (BASE_DONE | PAPP_DONE | IINST_DONE) )
             {
                 /* Append new metrics */
                 sprintf (msg_buf + strlen(msg_buf), "PAPP%d:%i;BASE%d:%li;IINST%d:%i;",
@@ -151,7 +158,7 @@ void *teleinfo_run(void *arg)
                 k, results[k].iinst);
 
                 DEBUG("teleinfo: append metrics [%s]\n", msg_buf);
-                results[k].papp = results[k].base = results[k].iinst = 0; 
+                results[k].state = 0; 
             }
         }
 
@@ -205,7 +212,7 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
     /* initialize ringbuffers and results*/
     for (unsigned i = 0; i < UART_NUMOF; i++) {
         ringbuffer_init(&(ctx[i].rx_buf), ctx[i].rx_mem, UART_BUFSIZE);
-        results[i].papp = results[i].base = results[i].iinst=0; 
+        results[i].state=0; 
     }
 
     /* initialize UART */

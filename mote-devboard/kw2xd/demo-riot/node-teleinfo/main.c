@@ -277,13 +277,16 @@ int main (void)
 
         PM_BLOCK(KINETIS_PM_STOP); // Disable LowPower
 
-        printf("main : Listening Teleinfo\n");
-        teleinfo_enable_rx();
-        LED0_ON;
-        xtimer_sleep(TELEINFO_LISTEN_SEC);
-        LED0_OFF;
-        teleinfo_disable_rx();
-        printf("main : Stop listening Teleinfo\n");
+        for (uint8_t c=0; c<2; c++){
+          printf("main : Listening Teleinfo #%d\n", c);
+          teleinfo_enable_rx(c);
+          LED0_ON;
+          xtimer_sleep(TELEINFO_LISTEN_SEC);
+          LED0_OFF;
+          teleinfo_disable_rx();
+          printf("main : Stop listening Teleinfo #%d\n", c);
+        }
+
 
         // Send metrics
         radio_on();

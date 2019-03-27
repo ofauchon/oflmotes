@@ -43,7 +43,7 @@ char teleinfo_stack[THREAD_STACKSIZE_MAIN];
 
 static kernel_pid_t main_pid; 
 
-static uint8_t rxen;
+static uint8_t rx_teleinfo;
 
 /* 
  * UART RX Callback function
@@ -55,7 +55,7 @@ static uint8_t rxen;
  */
 void teleinfo_rx_cb (void *arg, uint8_t data)
 {
-    if (rxen){
+    if (rx_teleinfo){
         uart_t dev = (uart_t) arg;
         data &= 0x7F;
         //DEBUG("rxcb: %02x \n", data);
@@ -76,10 +76,15 @@ void teleinfo_rx_cb (void *arg, uint8_t data)
 /*
  *  Enable teleinfo receive
  */
-void teleinfo_enable_rx(void)
+void teleinfo_enable_rx(uint8_t curtel)
 {
-    rxen=1; 
-    gpio_set(TELEINFO_POWER_PORT);
+    rx_teleinfo=curtel; 
+    if (curtel==0) {
+        gpio_set(TELEINFO_POWER_PORT_0);
+    }
+    else if (curtel==1) {
+        gpio_set(TELEINFO_POWER_PORT_1);
+    }
     thread_wakeup(teleinfo_pid);
 }
 /*
@@ -87,10 +92,9 @@ void teleinfo_enable_rx(void)
  */
 void teleinfo_disable_rx(void)
 {
-    rxen=0;
-    gpio_clear(TELEINFO_POWER_PORT);
-
-    //thread_sleep();
+    rx_teleinfo=0;
+    gpio_clear(TELEINFO_POWER_PORT_0);
+    gpio_clear(TELEINFO_POWER_PORT_1);
 }
 
 
@@ -153,9 +157,9 @@ void *teleinfo_run(void *arg)
             {
                 /* Append new metrics */
                 sprintf (msg_buf + strlen(msg_buf), "PAPP%d:%i;BASE%d:%li;IINST%d:%i;",
-                k, results[k].papp,
-                k, results[k].base,
-                k, results[k].iinst);
+                rx_teleinfo, results[k].papp,
+                rx_teleinfo, results[k].base,
+                rx_teleinfo, results[k].iinst);
 
                 DEBUG("teleinfo: append metrics [%s]\n", msg_buf);
                 results[k].state = 0; 
@@ -172,12 +176,11 @@ void *teleinfo_run(void *arg)
 
 
             DEBUG("teleinfo: stop RX and sleep\n");
-            rxen=0;
+            rx_teleinfo=0;
             LED1_OFF;
             thread_sleep();
 
             bzero (msg_buf, sizeof (msg_buf));
-            rxen=1;
             printf("teleinfo: wake up\n");
  
         
@@ -200,12 +203,15 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
 
     printf("teleinfo: init\n");
 
-    // We use PTE3 to power Teleinfo
-    gpio_init(TELEINFO_POWER_PORT, GPIO_OUT);
-    gpio_clear(TELEINFO_POWER_PORT);
+    // We use GPIOs  to power Teleinfo
+    gpio_init(TELEINFO_POWER_PORT_0, GPIO_OUT);
+    gpio_clear(TELEINFO_POWER_PORT_0);
+
+    gpio_init(TELEINFO_POWER_PORT_1, GPIO_OUT);
+    gpio_clear(TELEINFO_POWER_PORT_1);
 
     main_pid=pid; 
-    rxen=0;
+    rx_teleinfo=0;
     bzero (buffer, sizeof (buffer));
     bzero (msg_buf, sizeof (msg_buf));
 

@@ -254,7 +254,7 @@ int main (void)
   uint8_t cnt; 
   for (cnt=0; cnt<4; cnt++){
     LED0_TOGGLE;
-    xtimer_usleep(200 * 1000); 
+    xtimer_usleep(100 * 1000); 
   }
 
   printf("\n*** OFlabs 802.15.4 OFLMote Sensor Teleinfo aa\n");
@@ -277,12 +277,14 @@ int main (void)
 
         PM_BLOCK(KINETIS_PM_STOP); // Disable LowPower
 
-        for (uint8_t c=0; c<2; c++){
+        for (uint8_t c=1; c<3; c++){
           printf("main : Listening Teleinfo #%d\n", c);
           teleinfo_enable_rx(c);
-          LED0_ON;
+          if (c==1)  {LED0_ON;}
+          if (c==2)  {LED1_ON;}
           xtimer_sleep(TELEINFO_LISTEN_SEC);
-          LED0_OFF;
+          if (c==1)  {LED0_OFF;}
+          if (c==2)  {LED1_OFF;}
           teleinfo_disable_rx();
           printf("main : Stop listening Teleinfo #%d\n", c);
         }

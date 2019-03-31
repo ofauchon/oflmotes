@@ -79,11 +79,13 @@ void teleinfo_rx_cb (void *arg, uint8_t data)
 void teleinfo_enable_rx(uint8_t curtel)
 {
     rx_teleinfo=curtel; 
-    if (curtel==0) {
-        gpio_set(TELEINFO_POWER_PORT_0);
-    }
-    else if (curtel==1) {
+    if (curtel==1) {
+        gpio_clear(TELEINFO_POWER_PORT_2);
         gpio_set(TELEINFO_POWER_PORT_1);
+    }
+    else if (curtel==2) {
+        gpio_clear(TELEINFO_POWER_PORT_1);
+        gpio_set(TELEINFO_POWER_PORT_2);
     }
     thread_wakeup(teleinfo_pid);
 }
@@ -93,8 +95,8 @@ void teleinfo_enable_rx(uint8_t curtel)
 void teleinfo_disable_rx(void)
 {
     rx_teleinfo=0;
-    gpio_clear(TELEINFO_POWER_PORT_0);
     gpio_clear(TELEINFO_POWER_PORT_1);
+    gpio_clear(TELEINFO_POWER_PORT_2);
 }
 
 
@@ -115,7 +117,8 @@ void *teleinfo_run(void *arg)
     while (1) {
         DEBUG("teleinfo: Wait for teleinfo frame\n");
         msg_receive(&msg);
-        LED1_TOGGLE;
+        if (rx_teleinfo==1) {LED0_TOGGLE;}
+        if (rx_teleinfo==2) {LED1_TOGGLE;}
         uart_t dev = (uart_t)msg.content.value;
         bzero (buffer, sizeof (buffer));
         ringbuffer_get (&(ctx[dev].rx_buf), buffer, UART_BUFSIZE);
@@ -176,8 +179,9 @@ void *teleinfo_run(void *arg)
 
 
             DEBUG("teleinfo: stop RX and sleep\n");
+            if (rx_teleinfo==1) {LED0_OFF;}
+            if (rx_teleinfo==2) {LED1_OFF;}
             rx_teleinfo=0;
-            LED1_OFF;
             thread_sleep();
 
             bzero (msg_buf, sizeof (msg_buf));
@@ -204,11 +208,11 @@ kernel_pid_t teleinfo_init(kernel_pid_t pid ){
     printf("teleinfo: init\n");
 
     // We use GPIOs  to power Teleinfo
-    gpio_init(TELEINFO_POWER_PORT_0, GPIO_OUT);
-    gpio_clear(TELEINFO_POWER_PORT_0);
-
     gpio_init(TELEINFO_POWER_PORT_1, GPIO_OUT);
     gpio_clear(TELEINFO_POWER_PORT_1);
+
+    gpio_init(TELEINFO_POWER_PORT_2, GPIO_OUT);
+    gpio_clear(TELEINFO_POWER_PORT_2);
 
     main_pid=pid; 
     rx_teleinfo=0;

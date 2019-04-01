@@ -7,6 +7,7 @@
 #define TELEINFO_POWER_PORT_1 GPIO_PIN(PORT_E, 4)
 #define TELEINFO_POWER_PORT_2 GPIO_PIN(PORT_D, 1)
 
+#define TELEINFO_UART 1
 
 
 void *teleinfo_run(void *arg);

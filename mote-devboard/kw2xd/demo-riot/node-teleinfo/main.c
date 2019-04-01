@@ -301,12 +301,11 @@ int main (void)
         // Check if we have new messages.
         while (msg_try_receive(&m) == 1 ){
           if (m.sender_pid ==  teleinfo_pid) {
-            printf("main: new msg from teleinfo\n");
+            printf("main: new msg from teleinfo %s\n", tx_msg);
             //printf("Message received in main from pid: %d: [%s]\n",  m.sender_pid, (char*) m.content.ptr);
-            bzero(tx_msg, sizeof(tx_msg) );
-            memcpy(tx_msg, m.content.ptr, strlen(m.content.ptr) );
-            data_tx(tx_msg, strlen(tx_msg));
+            data_tx(m.content.ptr, strlen(m.content.ptr));
             xtimer_sleep(1);
+            free(m.content.ptr);
           } 
         }
 

@@ -125,7 +125,7 @@ static int data_tx (char *data, char data_sz)
  */ 
 static void net_config (void)
 {
-  printf ("net_config: Start\n");
+  printf ("main: net_config: Start\n");
 
   uint8_t out[GNRC_NETIF_L2ADDR_MAXLEN];
   int res;
@@ -135,51 +135,51 @@ static void net_config (void)
   iff = gnrc_netif_iter (iff);
   if (iff == NULL)
     {
-      printf ("net_config: ERROR : NO INTERFACE\n");
+      printf ("main: net_config: !!! ERROR : NO INTERFACE\n");
       return;
     }
   ifpid = iff->pid;
 
-  printf ("net_config: Switch to chan 11\n");
+  printf ("main: net_config: Switch to chan 11\n");
   int16_t val = 11;
   res=gnrc_netapi_set (iff->pid, NETOPT_CHANNEL, 0, (int16_t *) & val, sizeof (int16_t));
   if (res<0){
-    printf ("net_config: Can't switch to chan (err:%d)\n", res);
+    printf ("main: net_config: Can't switch to chan (err:%d)\n", res);
   }
 
   // Set PAN to 0xF00D
-  printf ("net_config: Set pan to 0xF00D\n");
+  printf ("main: net_config: Set pan to 0xF00D\n");
   val = 0xF00D;
   res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
   if (res<0){
-    printf ("net_config: Can't set PAN ID(err:%d)\n", res);
+    printf ("main: net_config: Can't set PAN ID(err:%d)\n", res);
   }
 
   // Set address
-  printf ("net_config: Set addr to 00:...:99\n");
+  printf ("main: net_config: Set addr to 00:...:99\n");
   char src[24];
   sprintf(src, "00:00:00:00:00:00:00:%02x", NODE_ID);
 
   size_t addr_len = gnrc_netif_addr_from_str (src, out);
   if (addr_len == 0)
     {
-      printf ("net_config: Unable to parse address !!!\n");
+      printf ("main: net_config: Unable to parse address !!!\n");
     }
   else
     {
       gnrc_netapi_set (iff->pid, NETOPT_ADDRESS_LONG, 0, out, sizeof (out));
       res=gnrc_netapi_set (iff->pid, NETOPT_NID, 0, (int16_t *) & val, sizeof (int16_t));
       if (res<0){
-        printf ("net_config: Can't set Network address(err:%d)\n", res);
+        printf ("main: net_config: Can't set Network address(err:%d)\n", res);
       }
     }
 
   // Set Max TX Power
-  printf ("net_config: Set tx_power to max\n");
+  printf ("main: net_config: Set tx_power to max\n");
   val = KW2XDRF_OUTPUT_POWER_MAX;
   res=gnrc_netapi_set (iff->pid, NETOPT_TX_POWER, 0, (int16_t *) & val, sizeof (int16_t));
   if (res<0){
-    printf ("net_config: Can't set PAN ID(err:%d)\n", res);
+    printf ("main: net_config: Can't set PAN ID(err:%d)\n", res);
   }
 }
 
@@ -201,11 +201,11 @@ int getBat(void){
 
 
 void radio_on(void){
+    printf("main: radio_on: Switch radio ON\n");
     netopt_state_t state;
     gnrc_netapi_get(ifpid, NETOPT_STATE, 0, &state, sizeof(state));
 
     if (state == NETOPT_STATE_OFF){
-        printf("radio_on: Radio was off as expected;enable RST_PIN, and reset PHY through STATE_RESET\n");
         KW2XDRF_GPIO->PSOR = (1 << KW2XDRF_RST_PIN);
 
         /* wait for modem IRQ_B interrupt request */
@@ -225,7 +225,7 @@ void radio_on(void){
         // Set radio channel, power, pan ... etc 
         net_config();
     } else {
-        printf ("radio_on: !!! radio was NOT OFF (state =%d)\n",state);
+        printf ("main: radio_on: !!! radio was NOT in state NETOPT_STATE_OFF (state =%d)\n",state);
     }
 }
 

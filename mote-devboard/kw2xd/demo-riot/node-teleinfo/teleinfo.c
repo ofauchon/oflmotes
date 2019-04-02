@@ -18,9 +18,9 @@
 
 char buffer[UART_BUFSIZE];
 
-#define  BASE_DONE  (0 << 1 ) 
-#define  PAPP_DONE  (1 << 1 ) 
-#define  IINST_DONE (2 << 1 ) 
+#define  BASE_DONE  (1 << 0 )
+#define  PAPP_DONE  (1 << 1 )
+#define  IINST_DONE (1 << 2 )
 
 typedef struct
 {
@@ -149,36 +149,37 @@ void *teleinfo_run(void *arg)
         }
 
         // Check if we have complete sequence (PAPP + BASE + IINST) on every UART
-        DEBUG("teleinfo: UART%d TELEINFO:%i :[PAPP:%i;BASE:%li;IINST:%i]\n",
+        DEBUG("teleinfo: UART%i TELEINFO:%i :STATE=%i [PAPP:%i;BASE:%li;IINST:%i]\n",
         TELEINFO_UART,
         rx_teleinfo,
+        results[TELEINFO_UART].state,
         results[TELEINFO_UART].papp,
         results[TELEINFO_UART].base,
         results[TELEINFO_UART].iinst);
 
         if (results[TELEINFO_UART].state == (BASE_DONE | PAPP_DONE | IINST_DONE) )
         {
-            /* Append new metrics */
+            /* Great! We have something to send to main thread */
             char* tbuf;
             tbuf = (char*) malloc(MSG_SIZE);
+
             snprintf (tbuf, MSG_SIZE, "PAPP%d:%i;BASE%d:%li;IINST%d:%i;",
             rx_teleinfo, results[TELEINFO_UART].papp,
             rx_teleinfo, results[TELEINFO_UART].base,
             rx_teleinfo, results[TELEINFO_UART].iinst);
-            DEBUG("teleinfo: append metrics [%s]\n", tbuf);
+            DEBUG("teleinfo: '%s' will be sent to main \n", tbuf);
+
             results[TELEINFO_UART].state = 0;
             results[TELEINFO_UART].papp = 0; 
             results[TELEINFO_UART].base = 0; 
             results[TELEINFO_UART].iinst = 0;  
-            /* Great! We have something to send to main thread */
-            DEBUG("teleinfo: '%s' will be sent to main \n", tbuf);
             
             msg_t msg;
             msg.content.ptr = (void*) tbuf;
             msg_send (&msg, main_pid);
 
             // Send and sleep
-            DEBUG("teleinfo: stop RX and sleep\n");
+            DEBUG("teleinfo: stop RX and stop teleinfo thread\n");
             if (rx_teleinfo==1) {LED0_OFF;}
             else if (rx_teleinfo==2) {LED1_OFF;}
             rx_teleinfo=0;

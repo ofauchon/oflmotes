@@ -7,11 +7,11 @@ BAUD = 115200
 TERMPROG=picocom
 TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 
-RIOTBASE ?= /home/olivier/dev/RIOT.gebart
+RIOTBASE ?= ../../../../RIOT.gebart
 #RIOTBASE ?= /home/olivier/dev/RIOT.original
 
 #RIOTCPU ?= $(CURDIR)/../../RIOT/thirdparty_cpu
-RIOTBOARD ?= $(CURDIR)/../boards
+RIOTBOARD ?= $(CURDIR)/../../boards
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1

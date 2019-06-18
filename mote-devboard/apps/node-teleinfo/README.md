@@ -23,6 +23,21 @@ for each driven signal adapter
 Hardware
 --------
 
+Build dependancies
+------------------
+
+# Toolchain instructions for Arch Linux
+pacman -S arm-none-eabi-gcc arm-none-eabi-newlib
+
+# RIOT-OS (Kinetis power mode branch from gebart's RIOT-OS clone
+cd ~/dev/
+git clone https://github.com/gebart/RIOT.git RIOT.gebart
+git checkout pr/kinetis-pm
+
+Build
+-----
+
+Just run 'make'
 
 
 Running

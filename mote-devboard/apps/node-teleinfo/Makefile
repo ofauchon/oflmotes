@@ -7,8 +7,8 @@ BAUD = 115200
 TERMPROG=picocom
 TERMFLAGS=$(PORT) -b $(BAUD) --imap lfcrlf --echo
 
-RIOTBASE ?= ../../../../RIOT.gebart
-#RIOTBASE ?= /home/olivier/dev/RIOT.original
+RIOTBASE ?= ../../../../RIOT.benemorius
+#RIOTBASE ?= /home/olivier/dev/RIOT
 
 #RIOTCPU ?= $(CURDIR)/../../RIOT/thirdparty_cpu
 RIOTBOARD ?= $(CURDIR)/../../boards

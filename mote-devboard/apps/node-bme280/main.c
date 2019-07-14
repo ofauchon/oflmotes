@@ -72,8 +72,8 @@ static uint16_t humidity;
 
 static char tx_msg[TX_BUFSIZE];
 
-static uint8_t cnf_enable_pm_radiosleep=1;
-static uint8_t cnf_enable_pm_mcusleep=1;
+static uint8_t cnf_enable_pm_radiosleep=0;
+static uint8_t cnf_enable_pm_mcusleep=0;
 
 
 /*

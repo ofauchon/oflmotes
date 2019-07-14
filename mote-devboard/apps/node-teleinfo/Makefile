@@ -51,7 +51,7 @@ CFLAGS += -DMOTESVERSION=\"git.$(MOTES_VERSION)\" -DRIOTVERSION=\"git.$(RIOT_VER
 #JLINK
 #OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
 #FTDI 2232
-OPENOCD_ADAPTER_INIT ?= -c 'source ./openocd/ftdi.cfg'  -c 'transport select swd'
+OPENOCD_ADAPTER_INIT ?= -c 'source ../openocd/ftdi.cfg'  -c 'transport select swd'
 
 #OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' 
 

@@ -5,8 +5,8 @@ APPLICATION = test-lowpower
 BOARD = oflmote-dev
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE= /home/olivier/dev/RIOT.gebart
-RIOTBOARD=../boards
+RIOTBASE= /home/olivier/dev/RIOT.benemorius
+RIOTBOARD=../../../boards
 
 
 
@@ -29,11 +29,14 @@ DEVELHELP ?= 1
 QUIET ?= 1
 
 
-OPENOCD_ADAPTER_INIT ?= -c 'source [find interface/jlink.cfg]' -c 'transport select swd'
+OPENOCD_ADAPTER_INIT ?= -c 'source ../../openocd/ftdi.cfg'  -c 'transport select swd'
 #OPENOCD_EXTRA_INIT ?= "-d 3"
 
 include $(RIOTBASE)/Makefile.include
 
 picocom:   
 	picocom /dev/ttyUSB0 --baud 115200  --imap crcrlf,lfcrlf
+
+picocom9600:   
+	picocom /dev/ttyUSB0 --baud 9600  --imap crcrlf,lfcrlf
 

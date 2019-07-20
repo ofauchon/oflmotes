@@ -73,7 +73,6 @@ static uint16_t humidity;
 static char tx_msg[TX_BUFSIZE];
 
 static uint8_t cnf_enable_pm_radiosleep=0;
-static uint8_t cnf_enable_pm_mcusleep=0;
 
 
 /*
@@ -81,11 +80,6 @@ static uint8_t cnf_enable_pm_mcusleep=0;
  */
 static void sensor_measure(void){
     printf("sensor_measure: Starting measures\n");
-
-    if (cnf_enable_pm_mcusleep) {
-        //i2c not working in Low Power Modes
-        pm_block(KINETIS_PM_STOP);
-    }
 
     /* Get temperature in centi degrees Celsius */
     temperature = bmx280_read_temperature(&bmx_dev);
@@ -99,11 +93,6 @@ static void sensor_measure(void){
 
     /* Get pressure in %rH */
     humidity = bme280_read_humidity(&bmx_dev);
-
-    if (cnf_enable_pm_mcusleep) {
-        // Restore LPM
-        pm_unblock(KINETIS_PM_STOP);
-    }
 
     printf("sensor_measure : Sensor measure Done\n");
 }
@@ -217,10 +206,6 @@ static void net_config (void)
 static void sensors_config (void) {
   printf ("sensors_init: Starting\n");
 
-  if (cnf_enable_pm_mcusleep) {
-     //i2c not working in LPM
-      pm_block(KINETIS_PM_STOP);
-  }
 
   // Sensor Init
   // Right now, I'm not sure i2c transactions are working under LLS power mode
@@ -231,11 +216,6 @@ static void sensors_config (void) {
 
   if (result == -2) {
       printf("sensors_init: ERROR:  The sensor did not answer correctly at address 0x%02X\r\n", bmx280_params[0].i2c_addr);
-  }
-
-  if (cnf_enable_pm_mcusleep) {
-     //Restore LPM
-      pm_unblock(KINETIS_PM_STOP);
   }
 
   printf ("sensors_init: All Done\n");
@@ -309,15 +289,14 @@ int main (void)
   printf("Riot Version: %s\n", RIOTVERSION);
   printf("Mote Version: %s\n", MOTESVERSION);
   printf("Build   Date: %s\n", BUILDDATE);
-  printf("Powersave mcu sleep: %d\n", cnf_enable_pm_mcusleep);
+//  printf("Powersave mcu sleep: %d\n", cnf_enable_pm_mcusleep);
   printf("Powersave radio sleep: %d\n", cnf_enable_pm_radiosleep);
 
   // We don't want to use MCU sleep mode ...
   // This will definitly disable LPM as pm_layered lock counter 
   // for state (KINETIS_PM_STOP) will never reach zero.
-  if (cnf_enable_pm_mcusleep == 0) {
-    pm_block(KINETIS_PM_STOP);
-  }
+
+ //   pm_block(KINETIS_PM_STOP);
 
   net_config();
   sensors_config();

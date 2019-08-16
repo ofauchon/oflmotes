@@ -26,8 +26,11 @@ Hardware
 Build dependancies
 ------------------
 
-# Toolchain instructions for Arch Linux
-pacman -S arm-none-eabi-gcc arm-none-eabi-newlib openocd
+# Packages to build
+pacman -S arm-none-eabi-gcc arm-none-eabi-newlib arm-none-eabi-gdb openocd
+
+# Packages to debug
+pacman -S arm-none-eabi-gdb
 
 # RIOT-OS (Kinetis power mode branch from gebart's RIOT-OS clone
 cd ~/dev/

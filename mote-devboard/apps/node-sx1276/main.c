@@ -19,29 +19,12 @@
  */
 
 #include <stdio.h>
-#include <string.h>
-
-#include "board.h"
-#include "periph_conf.h"
-
-#include "pm_layered.h"
-
-#include "thread.h"
-#include "timex.h"
-#include "xtimer.h"
-
-#include "ringbuffer.h"
-#include "strings.h"
-
-#include "periph/uart.h"
-#include "periph/gpio.h"
-#include "periph/hwrng.h"
-#include "periph/adc.h"
-
+#include "semtech_loramac.h"
 #include "fmt.h"
 
-#include "net/loramac.h"
-#include "semtech_loramac.h"
+extern semtech_loramac_t loramac;
+
+
 
 char buflog[255];
 
@@ -54,40 +37,17 @@ static uint8_t deveui[LORAMAC_DEVEUI_LEN];
 static uint8_t appeui[LORAMAC_APPEUI_LEN];
 static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
-semtech_loramac_t loramac;
 
-
-/*
- * Use bandgap reference and ADC to measure board's voltage
- i2c operation dislikes LPM*/
-int getBat(void){
-  // Enable bandgap reference for battery
-  PMC->REGSC |= 1;
-  // Init ADC line 6
-  adc_init(ADC_LINE(6));
-  int sample = adc_sample(ADC_LINE(6), ADC_RES_10BIT);
-  int mv = (int)(1024*1000/sample);
-  PMC->REGSC &= (uint8_t) ~1;
-  return mv;
-}
 
 int main (void)
 {
 
 
- pm_block(KINETIS_PM_STOP);
+ //pm_block(KINETIS_PM_STOP);
 
   uint16_t loop_cntr=0; 
-  LED0_OFF; 
-  LED1_OFF; 
-
-  uint8_t cnt; 
-  for (cnt=0; cnt<4; cnt++){
-    LED0_TOGGLE;
-    xtimer_usleep(200 * 1000); 
-  }
-
-  gpio_clear(GPIO_PIN(PORT_C, 4));
+  LED0_ON; 
+  LED1_ON; 
 
   printf("\n*** OFlabs 802.15.4 OFLMote LoRa\n");
   printf("Riot Version: %s\n", RIOTVERSION);
@@ -105,24 +65,20 @@ int main (void)
   semtech_loramac_set_deveui(&loramac, deveui);
   semtech_loramac_set_appeui(&loramac, appeui);
   semtech_loramac_set_appkey(&loramac, appkey);
+  semtech_loramac_set_public_network(&loramac, 0);
+
+
 
 
   //net_config();
   //sensors_config();
-  int i; 
-  for (i=0;i<3;i++){
-  gpio_set(GPIO_PIN(PORT_C, 4));
-  puts("Wait 1sec");
-    LED1_ON;
-    xtimer_sleep(1); 
-  gpio_clear(GPIO_PIN(PORT_C, 4));
-    LED1_OFF;
-}
-
+  puts("Wait 5sec");
+  xtimer_sleep(5); 
+  puts("Resume from pause");
 
     puts("Initializing Lora");
     /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
-    semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+ //   semtech_loramac_set_dr(&loramac, LORAMAC_DR_2);
 
     /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
      * generated device address and to get the network and application session
